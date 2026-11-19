@@ -50,3 +50,8 @@ BundleArtifacts/
 
 # OS
 Desktop.ini
+
+# Local scratch / incoming drops
+_incoming/
+/chatai-ui-mockup.png
+/chatai-ui-rebuild.png
