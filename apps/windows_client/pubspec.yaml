@@ -1,0 +1,39 @@
+name: chatai
+description: ChatAI — Windows desktop chat client (Microsoft Store / MSIX). Brand placeholder.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  http: ^1.2.2
+  flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.3.5
+  url_launcher: ^6.3.1
+  provider: ^6.1.2
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  msix: ^3.16.8
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+# MSIX packaging for Microsoft Store (fill Partner Center identity before release).
+msix_config:
+  display_name: ChatAI
+  publisher_display_name: ChatAI Publisher Placeholder
+  identity_name: ChatAI.Placeholder
+  msix_version: 0.1.0.0
+  capabilities: internetClient
+  languages: en-us, vi-vn

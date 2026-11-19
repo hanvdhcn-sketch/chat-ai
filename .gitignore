@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Env / secrets — never commit
+.env
+.env.local
+.env.*.local
+*.pem
+*.p12
+*.pfx
+secrets/
+
+# Build / caches
+dist/
+build/
+.next/
+.turbo/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+
+# Flutter
+apps/windows_client/.dart_tool/
+apps/windows_client/.flutter-plugins
+apps/windows_client/.flutter-plugins-dependencies
+apps/windows_client/.packages
+apps/windows_client/build/
+apps/windows_client/.pub-cache/
+apps/windows_client/.pub/
+apps/windows_client/ephemeral/
+**/*.iml
+**/.idea/
+**/android/.gradle/
+**/ios/Pods/
+
+# MSIX / Windows packaging artifacts
+*.msix
+*.appx
+*.appxbundle
+AppPackages/
+BundleArtifacts/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.cursor/
+
+# OS
+Desktop.ini

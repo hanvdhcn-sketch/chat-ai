@@ -1,0 +1,25 @@
+{
+  "@@locale": "vi",
+  "appTitle": "ChatAI",
+  "newChat": "Hội thoại mới",
+  "send": "Gửi",
+  "messageHint": "Nhắn ChatAI…",
+  "signIn": "Đăng nhập",
+  "signOut": "Đăng xuất",
+  "usageRemaining": "Còn {remaining} tin nhắn hôm nay",
+  "@usageRemaining": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "upgradePro": "Nâng cấp Pro",
+  "poweredBy": "Powered by ChatAI",
+  "freePlan": "Miễn phí",
+  "proPlan": "Pro",
+  "conversations": "Hội thoại",
+  "settings": "Cài đặt",
+  "language": "Ngôn ngữ",
+  "stubAuthHint": "Auth tạm dùng stub token cho đến khi gắn Supabase.",
+  "emptyChat": "Bắt đầu hội thoại",
+  "streaming": "Đang suy nghĩ…"
+}

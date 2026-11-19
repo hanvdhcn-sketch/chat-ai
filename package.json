@@ -1,0 +1,19 @@
+{
+  "name": "chat-ai",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ChatAI — Windows MS Store chat app (Flutter) + Fastify API (Grok + Gemini)",
+  "workspaces": [
+    "apps/api"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @chatai/api",
+    "build:api": "npm run build -w @chatai/api",
+    "start:api": "npm run start -w @chatai/api",
+    "typecheck:api": "npm run typecheck -w @chatai/api"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "npm@10.9.9"
+}
