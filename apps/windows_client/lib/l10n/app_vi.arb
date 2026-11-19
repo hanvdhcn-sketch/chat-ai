@@ -22,5 +22,8 @@
   "stubAuthHint": "Auth tạm dùng stub token cho đến khi gắn Supabase.",
   "emptyChat": "Bắt đầu hội thoại",
   "streaming": "Đang suy nghĩ…",
-  "stop": "Dừng"
+  "stop": "Dừng",
+  "storeStubHint": "Mua Store đang stub ngoài gói MS Store — Pro được cấp qua API stub.",
+  "storePurchaseHint": "Mua Pro qua Microsoft Store. Ngoài gói Store sẽ dùng stub rõ ràng.",
+  "restorePurchases": "Khôi phục giao dịch"
 }

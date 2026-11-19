@@ -1,55 +1,228 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
 
-/// Hand-maintained stubs mirroring `app_en.arb` / `app_vi.arb`.
-/// When Flutter SDK is available, prefer `flutter gen-l10n` and swap imports.
-class AppLocalizations {
-  AppLocalizations(this.locale);
+import 'app_localizations_en.dart';
+import 'app_localizations_vi.dart';
 
-  final Locale locale;
+// ignore_for_file: type=lint
 
-  static const supportedLocales = [Locale('en'), Locale('vi')];
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
 
   static AppLocalizations of(BuildContext context) {
-    final loc = Localizations.of<AppLocalizations>(context, AppLocalizations);
-    assert(loc != null, 'AppLocalizations not found in context');
-    return loc!;
+    return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
 
-  bool get isVi => locale.languageCode == 'vi';
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
-  String get appTitle => 'ChatAI';
-  String get newChat => isVi ? 'Hội thoại mới' : 'New chat';
-  String get send => isVi ? 'Gửi' : 'Send';
-  String get messageHint => isVi ? 'Nhắn ChatAI…' : 'Message ChatAI…';
-  String get signIn => isVi ? 'Đăng nhập' : 'Sign in';
-  String get signOut => isVi ? 'Đăng xuất' : 'Sign out';
-  String usageRemaining(int remaining) => isVi
-      ? 'Còn $remaining tin nhắn hôm nay'
-      : '$remaining messages left today';
-  String get upgradePro => isVi ? 'Nâng cấp Pro' : 'Upgrade to Pro';
-  String get restorePurchases =>
-      isVi ? 'Khôi phục giao dịch' : 'Restore purchases';
-  String get storePurchaseHint => isVi
-      ? 'Mua Pro qua Microsoft Store (\$9.99/tháng).'
-      : 'Buy Pro via Microsoft Store (\$9.99/mo).';
-  String get storeStubHint => isVi
-      ? 'StoreContext chưa gắn — đang dùng stub verify (dev).'
-      : 'StoreContext not wired — using stub verify (dev).';
-  String get poweredBy => 'Powered by ChatAI';
-  String get freePlan => isVi ? 'Miễn phí' : 'Free';
-  String get proPlan => 'Pro';
-  String get conversations => isVi ? 'Hội thoại' : 'Conversations';
-  String get settings => isVi ? 'Cài đặt' : 'Settings';
-  String get language => isVi ? 'Ngôn ngữ' : 'Language';
-  String get stubAuthHint => isVi
-      ? 'Auth tạm dùng stub token cho đến khi gắn Supabase.'
-      : 'Dev auth uses stub tokens until Supabase is wired.';
-  String get emptyChat => isVi ? 'Bắt đầu hội thoại' : 'Start a conversation';
-  String get streaming => isVi ? 'Đang suy nghĩ…' : 'Thinking…';
-  String get stop => isVi ? 'Dừng' : 'Stop';
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('vi')
+  ];
+
+  /// No description provided for @appTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ChatAI'**
+  String get appTitle;
+
+  /// No description provided for @newChat.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get newChat;
+
+  /// No description provided for @send.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get send;
+
+  /// No description provided for @messageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Message ChatAI…'**
+  String get messageHint;
+
+  /// No description provided for @signIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signIn;
+
+  /// No description provided for @signOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get signOut;
+
+  /// No description provided for @usageRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{remaining} messages left today'**
+  String usageRemaining(int remaining);
+
+  /// No description provided for @upgradePro.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Pro'**
+  String get upgradePro;
+
+  /// No description provided for @poweredBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Powered by ChatAI'**
+  String get poweredBy;
+
+  /// No description provided for @freePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get freePlan;
+
+  /// No description provided for @proPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro'**
+  String get proPlan;
+
+  /// No description provided for @conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get conversations;
+
+  /// No description provided for @settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @stubAuthHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Dev auth uses stub tokens until Supabase is wired.'**
+  String get stubAuthHint;
+
+  /// No description provided for @emptyChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a conversation'**
+  String get emptyChat;
+
+  /// No description provided for @streaming.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking…'**
+  String get streaming;
+
+  /// No description provided for @stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stop;
+
+  /// No description provided for @storeStubHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Store purchase stubbed outside an MS Store package — Pro granted via API stub.'**
+  String get storeStubHint;
+
+  /// No description provided for @storePurchaseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy Pro via Microsoft Store. Outside Store packaging this uses a clear stub.'**
+  String get storePurchaseHint;
+
+  /// No description provided for @restorePurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get restorePurchases;
 }
 
 class _AppLocalizationsDelegate
@@ -57,13 +230,30 @@ class _AppLocalizationsDelegate
   const _AppLocalizationsDelegate();
 
   @override
-  bool isSupported(Locale locale) =>
-      ['en', 'vi'].contains(locale.languageCode);
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
 
   @override
-  Future<AppLocalizations> load(Locale locale) async =>
-      AppLocalizations(locale);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'vi'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
+    case 'vi':
+      return AppLocalizationsVi();
+  }
+
+  throw FlutterError(
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }
