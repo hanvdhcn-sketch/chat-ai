@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/store_billing.dart';
 import '../theme/app_theme.dart';
 import '../widgets/free_badge.dart';
 import '../widgets/message_bubble.dart';
@@ -23,12 +24,14 @@ class _ChatScreenState extends State<ChatScreen> {
   final _scroll = ScrollController();
 
   late final ApiClient _api;
+  late final StoreBillingService _storeBilling;
   List<Conversation> _conversations = [];
   Conversation? _active;
   List<ChatMessage> _messages = [];
   UsageSnapshot? _usage;
   bool _busy = false;
   bool _streaming = false;
+  bool _billingBusy = false;
   String? _error;
   Locale _localeOverride = const Locale('en');
 
@@ -40,7 +43,64 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     final auth = context.read<AuthService>();
     _api = ApiClient(getToken: () async => auth.accessToken);
+    _storeBilling = StoreBillingService(api: _api);
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  Future<void> _upgradePro() async {
+    if (_billingBusy) return;
+    setState(() {
+      _billingBusy = true;
+      _error = null;
+    });
+    try {
+      final result = await _storeBilling.purchasePro();
+      final auth = context.read<AuthService>();
+      await auth.refreshMe();
+      await _bootstrap();
+      if (!mounted) return;
+      final loc = AppLocalizations.of(context);
+      final msg = result.ok
+          ? (result.stub
+              ? loc.storeStubHint
+              : 'Pro (${result.planTier}) — ${result.status}')
+          : (result.message ?? result.status);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      if (!result.ok && result.status != 'cancelled') {
+        setState(() => _error = result.message ?? result.status);
+      }
+    } catch (e) {
+      setState(() => _error = _friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _billingBusy = false);
+    }
+  }
+
+  Future<void> _restorePurchases() async {
+    if (_billingBusy) return;
+    setState(() {
+      _billingBusy = true;
+      _error = null;
+    });
+    try {
+      final result = await _storeBilling.restorePurchases();
+      final auth = context.read<AuthService>();
+      await auth.refreshMe();
+      await _bootstrap();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.message ??
+                '${result.status} → ${result.planTier ?? 'free'}',
+          ),
+        ),
+      );
+    } catch (e) {
+      setState(() => _error = _friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _billingBusy = false);
+    }
   }
 
   Future<void> _bootstrap() async {
@@ -317,6 +377,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     onSelect: _openConversation,
                     usage: _usage,
                     showBadge: showBadge,
+                    billingBusy: _billingBusy,
+                    onUpgrade: _upgradePro,
+                    onRestore: _restorePurchases,
                     onToggleLocale: () {
                       setState(() {
                         _localeOverride = _localeOverride.languageCode == 'en'
@@ -506,6 +569,9 @@ class _Sidebar extends StatelessWidget {
     required this.onSelect,
     required this.usage,
     required this.showBadge,
+    required this.billingBusy,
+    required this.onUpgrade,
+    required this.onRestore,
     required this.onToggleLocale,
     required this.onSwitchTier,
     required this.localeCode,
@@ -517,6 +583,9 @@ class _Sidebar extends StatelessWidget {
   final ValueChanged<Conversation> onSelect;
   final UsageSnapshot? usage;
   final bool showBadge;
+  final bool billingBusy;
+  final VoidCallback onUpgrade;
+  final VoidCallback onRestore;
   final VoidCallback onToggleLocale;
   final ValueChanged<String> onSwitchTier;
   final String localeCode;
@@ -586,12 +655,34 @@ class _Sidebar extends StatelessWidget {
             ),
           if (showBadge)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: OutlinedButton(
-                onPressed: () {},
-                child: Text(l10n.upgradePro),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FilledButton(
+                    onPressed: billingBusy ? null : onUpgrade,
+                    child: Text(
+                      billingBusy ? '…' : l10n.upgradePro,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.storePurchaseHint,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.ink.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ],
               ),
             ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: TextButton(
+              onPressed: billingBusy ? null : onRestore,
+              child: Text(l10n.restorePurchases),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
             child: Row(

@@ -8,12 +8,33 @@ export type ModelId =
   | 'grok-fast'
   | 'grok';
 
+export type StoreSubscriptionStatus =
+  | 'active'
+  | 'trialing'
+  | 'expired'
+  | 'revoked'
+  | 'unknown';
+
+export interface StoreSubscription {
+  userId: string;
+  storeProductId: string;
+  storeCollectionItemId?: string;
+  status: StoreSubscriptionStatus;
+  userStoreIdHash?: string;
+  currentPeriodEnd?: string;
+  trialEnd?: string;
+  graceUntil?: string;
+  lastVerifiedAt: string;
+  source: 'collections_api' | 'stub' | 'client_attested';
+}
+
 export interface AuthUser {
   id: string;
   email: string;
   name?: string;
   locale: 'vi' | 'en';
   planTier: PlanTier;
+  /** @deprecated Stripe removed from end-user billing. */
   stripeCustomerId?: string;
 }
 

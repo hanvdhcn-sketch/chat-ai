@@ -1,11 +1,13 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { config, isSupabaseConfigured } from '../config.js';
 import type { AuthUser } from '../types/index.js';
+import { getUserPlanTierOverride } from '../services/store.js';
 
 /**
  * Auth verify stub.
  * Production: verify Supabase JWT (HS256/JWKS) with SUPABASE_JWT_SECRET.
  * Local/dev: accepts Bearer stub tokens shaped like `stub:<userId>:<tier>`.
+ * Store entitlement verify may override planTier in-memory until Postgres.
  */
 export async function requireAuth(
   request: FastifyRequest,
@@ -22,6 +24,11 @@ export async function requireAuth(
   if (!user) {
     await reply.code(401).send({ error: 'invalid_token' });
     return;
+  }
+
+  const override = getUserPlanTierOverride(user.id);
+  if (override) {
+    user.planTier = override;
   }
 
   request.user = user;

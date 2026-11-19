@@ -30,6 +30,14 @@ class AppLocalizations {
       ? 'Còn $remaining tin nhắn hôm nay'
       : '$remaining messages left today';
   String get upgradePro => isVi ? 'Nâng cấp Pro' : 'Upgrade to Pro';
+  String get restorePurchases =>
+      isVi ? 'Khôi phục giao dịch' : 'Restore purchases';
+  String get storePurchaseHint => isVi
+      ? 'Mua Pro qua Microsoft Store (\$9.99/tháng).'
+      : 'Buy Pro via Microsoft Store (\$9.99/mo).';
+  String get storeStubHint => isVi
+      ? 'StoreContext chưa gắn — đang dùng stub verify (dev).'
+      : 'StoreContext not wired — using stub verify (dev).';
   String get poweredBy => 'Powered by ChatAI';
   String get freePlan => isVi ? 'Miễn phí' : 'Free';
   String get proPlan => 'Pro';

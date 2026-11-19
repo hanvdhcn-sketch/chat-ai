@@ -86,6 +86,41 @@ class ApiClient {
     return UsageSnapshot.fromJson(body['usage'] as Map<String, dynamic>);
   }
 
+  /// Sync Microsoft Store entitlement with the BFF (Collections / stub verify).
+  Future<StoreVerifyResult> verifyStoreEntitlement({
+    required String storeProductId,
+    String? userStoreId,
+    bool clientLicenseActive = false,
+    bool stubGrantPro = false,
+  }) async {
+    final res = await _client.post(
+      Uri.parse('${AppConfig.apiBaseUrl}/v1/billing/store/verify'),
+      headers: await _headers(),
+      body: jsonEncode({
+        'storeProductId': storeProductId,
+        if (userStoreId != null) 'userStoreId': userStoreId,
+        'clientLicenseActive': clientLicenseActive,
+        'stubGrantPro': stubGrantPro,
+      }),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return StoreVerifyResult.fromJson(body);
+  }
+
+  Future<List<StoreProduct>> listStoreProducts() async {
+    final res = await _client.get(
+      Uri.parse('${AppConfig.apiBaseUrl}/v1/billing/store/products'),
+      headers: await _headers(),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    final list = body['products'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => StoreProduct.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   /// Streams SSE `data:` frames. Cancel via [cancel] Completer / abort the client.
   /// Returns a record of (eventStream, cancelFn).
   ({Stream<Map<String, dynamic>> events, Future<void> Function() cancel})

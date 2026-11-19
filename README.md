@@ -3,14 +3,16 @@
 Windows desktop chat AI app (Microsoft Store) + Fastify API.  
 **AI runtime:** xAI Grok + Google Gemini only. No Anthropic/Claude. Cursor is for building, not end-user inference.
 
+**Billing:** Microsoft Store IAP / Store-managed subscription (Free → Pro). **Not Stripe.**
+
 Brand name is a **placeholder** until Store listing / domain is finalized.
 
 ## Monorepo layout
 
 ```
 apps/
-  api/                 Fastify BFF — auth, chat, usage, Stripe stubs, AI gateway
-  windows_client/      Flutter Windows client — chat UI, Supabase auth hooks, SSE stream
+  api/                 Fastify BFF — auth, chat, usage, MS Store billing, AI gateway
+  windows_client/      Flutter Windows client — chat UI, Store purchase/restore, SSE stream
 docs/                  Extra notes (optional)
 .env.example           All env var names (copy → apps/api/.env; never commit secrets)
 ```
@@ -37,6 +39,12 @@ curl -N -X POST http://localhost:3001/v1/conversations/<id>/messages/stream \
   -H 'Authorization: Bearer stub:user_demo:free' \
   -H 'Content-Type: application/json' \
   -d '{"content":"Hello"}'
+
+# Stub Store verify → Pro (non-production; no Azure AD required)
+curl -s -X POST http://localhost:3001/v1/billing/store/verify \
+  -H 'Authorization: Bearer stub:user_demo:free' \
+  -H 'Content-Type: application/json' \
+  -d '{"stubGrantPro":true,"storeProductId":"pro_monthly"}'
 ```
 
 ## Quick start (Flutter Windows)
@@ -49,6 +57,8 @@ flutter create --platforms=windows .   # once — materializes full Windows runn
 flutter pub get
 flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3001
 ```
+
+**Upgrade to Pro** in the sidebar calls Store purchase (WinRT `StoreContext` when wired) then `POST /v1/billing/store/verify`. Outside a Store package the client uses a **clear stub** and the API stub grant (dev only).
 
 ## Environment variables
 
@@ -64,9 +74,10 @@ flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3001
 | `GOOGLE_GEMINI_API_KEY` | API only | Gemini inference (`streamGenerateContent` SSE) |
 | `XAI_GROK_MODEL` / `XAI_GROK_FAST_MODEL` | API | Optional Grok model ids |
 | `GEMINI_FLASH_MODEL` / `GEMINI_PRO_MODEL` | API | Optional Gemini model ids |
-| `STRIPE_SECRET_KEY` | API only | Checkout / portal |
-| `STRIPE_WEBHOOK_SECRET` | API only | Webhook verify |
-| `STRIPE_PRICE_PRO_MONTHLY` | API | Pro $9.99/mo price id |
+| `MS_STORE_TENANT_ID` | API only | Azure AD tenant for Collections API |
+| `MS_STORE_CLIENT_ID` | API only | Azure AD app client id |
+| `MS_STORE_CLIENT_SECRET` | API only | Azure AD app secret |
+| `MS_STORE_PRO_PRODUCT_ID` | API + client dart-define | Partner Center subscription SKU (default `pro_monthly`) |
 | `API_BASE_URL` | Client dart-define | BFF base URL |
 
 Full template: [`.env.example`](.env.example). **Do not commit `.env` or real keys.**
@@ -75,7 +86,8 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 
 | Knob | Free | Pro |
 |------|------|-----|
-| Price | $0 | $9.99/mo · 7-day trial |
+| Price | $0 | $9.99/mo · 7-day trial (if Partner Center allows) |
+| Billing | — | Microsoft Store subscription add-on |
 | Messages/day | ~40 | ~400 |
 | Models | Gemini Flash | Grok (default) + Gemini |
 | Branding | “Powered by …” badge | Hidden |
@@ -84,11 +96,13 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 ## MSIX / Microsoft Store (short)
 
 1. Partner Center: create app identity (publisher, package family name).
-2. Fill `msix_config` in `apps/windows_client/pubspec.yaml`.
-3. Build signed MSIX (`msix` package or CI); capability **InternetClient** only if possible.
-4. Privacy policy URL, age rating, bilingual Store listing.
-5. Confirm digital-goods policy vs Stripe Checkout (browser) before submit.
-6. Certification smoke: no localhost-only networking in release builds; auth/billing over HTTPS.
+2. Create **Subscription add-on** (e.g. `pro_monthly`) at **$9.99/mo**, optional 7-day trial; set `MS_STORE_PRO_PRODUCT_ID`.
+3. Enroll Azure AD app + Partner Center **service access** for Collections/Purchase API; set `MS_STORE_*` secrets on the API only.
+4. Fill `msix_config` in `apps/windows_client/pubspec.yaml`.
+5. Build signed MSIX (`msix` package or CI); capability **InternetClient** only if possible.
+6. Privacy policy URL, age rating, bilingual Store listing.
+7. Wire Flutter method channel `chatai/store_billing` → WinRT `StoreContext` (purchase / license / User Store ID).
+8. Certification smoke: no localhost-only networking in release builds; auth/billing over HTTPS; Store purchase works in sandbox.
 
 ## Scripts
 
@@ -97,10 +111,12 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 | `npm run dev:api` | Fastify watch mode |
 | `npm run build:api` | Compile API to `dist/` |
 | `npm run typecheck:api` | TypeScript check |
-| `npm run test:api` | Gateway + quota unit tests (mock HTTP) |
+| `npm run test:api` | Gateway + quota + Store entitlement unit tests |
 
 ## Milestone
 
 **M1 (chat core):** real xAI Grok + Gemini gateway when keys are set; clear stub stream when missing; SSE persist; Free→Gemini Flash / Pro→Grok(+Gemini); message hard quota + token soft-cap + in-memory rate limit; Flutter stop/loading/error UX.
 
-Still stubs: Supabase JWT verify, Postgres, Redis, Stripe live Checkout.
+**M3 (billing):** MS Store products + verify entitlement stubs; Stripe checkout/portal/webhook return **410 Gone**. Live Collections verify when `MS_STORE_*` credentials are set.
+
+Still stubs: Supabase JWT verify, Postgres, Redis, WinRT StoreContext native bridge.

@@ -98,3 +98,49 @@ class UsageSnapshot {
     );
   }
 }
+
+class StoreProduct {
+  StoreProduct({
+    required this.storeProductId,
+    required this.priceUsd,
+    required this.trialDays,
+    this.title,
+  });
+
+  final String storeProductId;
+  final double priceUsd;
+  final int trialDays;
+  final String? title;
+
+  factory StoreProduct.fromJson(Map<String, dynamic> json) {
+    return StoreProduct(
+      storeProductId: json['storeProductId'] as String? ?? 'pro_monthly',
+      priceUsd: (json['priceUsd'] as num?)?.toDouble() ?? 9.99,
+      trialDays: json['trialDays'] as int? ?? 7,
+      title: json['title'] as String?,
+    );
+  }
+}
+
+class StoreVerifyResult {
+  StoreVerifyResult({
+    required this.planTier,
+    required this.verified,
+    required this.stub,
+    this.reason,
+  });
+
+  final String planTier;
+  final bool verified;
+  final bool stub;
+  final String? reason;
+
+  factory StoreVerifyResult.fromJson(Map<String, dynamic> json) {
+    return StoreVerifyResult(
+      planTier: json['planTier'] as String? ?? 'free',
+      verified: json['verified'] as bool? ?? false,
+      stub: json['stub'] as bool? ?? false,
+      reason: json['reason'] as String?,
+    );
+  }
+}
