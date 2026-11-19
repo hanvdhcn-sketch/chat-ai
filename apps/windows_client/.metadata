@@ -1,0 +1,13 @@
+# This file tracks properties of this Flutter project.
+# Used by Flutter tool; safe to commit.
+version:
+  revision: "scaffold-placeholder"
+  channel: "stable"
+
+project_type: app
+
+migration:
+  platforms:
+    - platform: windows
+      create_revision: scaffold-placeholder
+      base_revision: scaffold-placeholder

@@ -1,0 +1,25 @@
+{
+  "@@locale": "en",
+  "appTitle": "ChatAI",
+  "newChat": "New chat",
+  "send": "Send",
+  "messageHint": "Message ChatAI…",
+  "signIn": "Sign in",
+  "signOut": "Sign out",
+  "usageRemaining": "{remaining} messages left today",
+  "@usageRemaining": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "upgradePro": "Upgrade to Pro",
+  "poweredBy": "Powered by ChatAI",
+  "freePlan": "Free",
+  "proPlan": "Pro",
+  "conversations": "Conversations",
+  "settings": "Settings",
+  "language": "Language",
+  "stubAuthHint": "Dev auth uses stub tokens until Supabase is wired.",
+  "emptyChat": "Start a conversation",
+  "streaming": "Thinking…"
+}
