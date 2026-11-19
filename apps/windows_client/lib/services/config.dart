@@ -1,6 +1,6 @@
 /// Build-time / runtime config for the Windows client.
 /// Pass secrets only via dart-define for public values (anon key, API URL).
-/// Never embed XAI / Gemini / Stripe secret keys in the client.
+/// Never embed XAI / Gemini / MS Store Azure AD secret keys in the client.
 class AppConfig {
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',

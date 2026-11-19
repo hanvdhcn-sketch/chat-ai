@@ -1,79 +1,98 @@
 import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../middleware/auth.js';
-import { config, isStripeConfigured } from '../config.js';
+import { config, isMsStoreConfigured } from '../config.js';
+import {
+  listStoreProductsPublic,
+  verifyMsStoreEntitlement,
+} from '../services/ms-store-entitlement.js';
+import {
+  getSubscription,
+  getUserPlanTierOverride,
+} from '../services/store.js';
 
 /**
- * Stripe stubs: Checkout Session + Customer Portal + webhook.
- * Webhook is the source of truth for plan_tier; never trust the client.
+ * Billing: Microsoft Store IAP / Store-managed subscription.
+ * Stripe checkout/portal/webhook stubs are deprecated (410 Gone).
  */
 export async function billingRoutes(app: FastifyInstance): Promise<void> {
+  /** Public catalog of Store product ids the client should purchase. */
+  app.get('/v1/billing/store/products', async () => listStoreProductsPublic());
+
+  /**
+   * Verify Store entitlement and sync plan_tier.
+   * Body: { storeProductId?, userStoreId?, clientLicenseActive?, stubGrantPro? }
+   */
+  app.post(
+    '/v1/billing/store/verify',
+    { preHandler: requireAuth },
+    async (request) => {
+      const user = request.user!;
+      const body = (request.body ?? {}) as {
+        storeProductId?: string;
+        userStoreId?: string;
+        clientLicenseActive?: boolean;
+        stubGrantPro?: boolean;
+      };
+
+      const result = await verifyMsStoreEntitlement(user.id, body);
+      // Reflect override on the request user for this process (in-memory).
+      if (result.planTier) {
+        user.planTier = result.planTier;
+      }
+
+      return {
+        planTier: result.planTier,
+        subscription: result.subscription,
+        verified: result.verified,
+        stub: result.stub,
+        reason: result.reason,
+        msStoreConfigured: isMsStoreConfigured(),
+        priceUsd: 9.99,
+        trialDays: 7,
+      };
+    },
+  );
+
+  /** Current Store subscription snapshot for the authenticated user. */
+  app.get(
+    '/v1/billing/store/subscription',
+    { preHandler: requireAuth },
+    async (request) => {
+      const user = request.user!;
+      const override = getUserPlanTierOverride(user.id);
+      return {
+        planTier: override ?? user.planTier,
+        subscription: getSubscription(user.id) ?? null,
+        productId: config.msStore.proProductId,
+        provider: 'microsoft_store',
+      };
+    },
+  );
+
+  // ---------------------------------------------------------------------------
+  // Deprecated Stripe stubs — removed from the shipping path (MS Store only).
+  // ---------------------------------------------------------------------------
+
+  const stripeGone = {
+    error: 'stripe_deprecated',
+    message:
+      'End-user Pro billing uses Microsoft Store IAP/subscription. Use POST /v1/billing/store/verify.',
+    provider: 'microsoft_store',
+  };
+
   app.post(
     '/v1/billing/checkout',
     { preHandler: requireAuth },
-    async (request, reply) => {
-      const user = request.user!;
-      if (!isStripeConfigured()) {
-        return reply.code(503).send({
-          error: 'stripe_not_configured',
-          hint: 'Set STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_PRO_MONTHLY',
-          stub: {
-            checkoutUrl: null,
-            trialDays: 7,
-            priceUsd: 9.99,
-            userId: user.id,
-          },
-        });
-      }
-
-      // Production: stripe.checkout.sessions.create({ mode: 'subscription',
-      // trial_period_days: 7, metadata: { user_id }, line_items: [{ price }] })
-      return {
-        checkoutUrl: `${config.publicApiUrl}/stub/stripe-checkout?user=${user.id}`,
-        trialDays: 7,
-        priceUsd: 9.99,
-      };
-    },
+    async (_request, reply) => reply.code(410).send(stripeGone),
   );
 
   app.post(
     '/v1/billing/portal',
     { preHandler: requireAuth },
-    async (request, reply) => {
-      const user = request.user!;
-      if (!isStripeConfigured()) {
-        return reply.code(503).send({
-          error: 'stripe_not_configured',
-          stub: { portalUrl: null, userId: user.id },
-        });
-      }
-      return {
-        portalUrl: `${config.publicApiUrl}/stub/stripe-portal?user=${user.id}`,
-      };
-    },
+    async (_request, reply) => reply.code(410).send(stripeGone),
   );
 
-  /**
-   * Stripe webhook stub — verify signature with STRIPE_WEBHOOK_SECRET in prod.
-   * Handle: checkout.session.completed, customer.subscription.updated/deleted,
-   * invoice.payment_failed (grace 3 days).
-   */
-  app.post('/v1/billing/webhook', async (request, reply) => {
-    const signature = request.headers['stripe-signature'];
-    if (!isStripeConfigured()) {
-      app.log.warn(
-        { hasSignature: Boolean(signature) },
-        'stripe webhook received but Stripe not configured',
-      );
-      return reply.code(503).send({ error: 'stripe_not_configured' });
-    }
-
-    // Production: constructEvent(rawBody, signature, webhookSecret) then idempotent sync.
-    const event = request.body as { type?: string; id?: string } | null;
-    app.log.info(
-      { eventType: event?.type, eventId: event?.id },
-      'stripe webhook stub accepted',
-    );
-
-    return { received: true, stub: true };
-  });
+  app.post('/v1/billing/webhook', async (_request, reply) =>
+    reply.code(410).send(stripeGone),
+  );
 }

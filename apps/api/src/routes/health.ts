@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import {
   isAiConfigured,
-  isStripeConfigured,
+  isMsStoreConfigured,
   isSupabaseConfigured,
 } from '../config.js';
 
@@ -12,7 +12,9 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
     stubs: {
       supabaseConfigured: isSupabaseConfigured(),
       aiConfigured: isAiConfigured(),
-      stripeConfigured: isStripeConfigured(),
+      msStoreConfigured: isMsStoreConfigured(),
+      /** @deprecated Stripe is not the end-user billing path. */
+      stripeConfigured: false,
     },
   }));
 }
