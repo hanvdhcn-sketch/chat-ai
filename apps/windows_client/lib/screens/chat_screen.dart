@@ -9,8 +9,37 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/store_billing.dart';
 import '../theme/app_theme.dart';
-import '../widgets/free_badge.dart';
+import '../widgets/composer_bar.dart';
+import '../widgets/left_nav.dart';
 import '../widgets/message_bubble.dart';
+import '../widgets/model_catalog.dart';
+import '../widgets/right_panel.dart';
+
+/// Sample conversation shown when the API has no messages (visual match to mockup).
+const _sampleUser =
+    'Hãy lập kế hoạch học tập để trở thành SysAdmin chuyên nghiệp trong 6 tháng';
+
+const _sampleAssistant = '''
+Dưới đây là **lộ trình 6 tháng** để trở thành SysAdmin chuyên nghiệp:
+
+1. **Nền tảng (Tháng 1–2)**
+- Linux cơ bản, shell, networking
+- Virtualization & containers (Docker)
+
+2. **Hạ tầng (Tháng 3–4)**
+- Windows Server, Active Directory
+- Monitoring, backup, security cơ bản
+
+3. **Automation (Tháng 5)**
+- Bash/PowerShell scripting
+- Ansible / CI cơ bản
+
+4. **Thực chiến (Tháng 6)**
+- Lab home + dự án portfolio
+- Review kiến thức & interview prep
+
+Bạn muốn mình chi tiết hóa tuần đầu tiên không?
+''';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -32,11 +61,31 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _busy = false;
   bool _streaming = false;
   bool _billingBusy = false;
+  bool _showSample = true;
   String? _error;
+  String _selectedModelId = kUiModels.first.id;
   Locale _localeOverride = const Locale('en');
 
   Future<void> Function()? _cancelStream;
   StreamSubscription<Map<String, dynamic>>? _streamSub;
+
+  UiModel get _selectedModel => uiModelById(_selectedModelId);
+
+  List<ChatMessage> get _displayMessages {
+    if (_messages.isNotEmpty) return _messages;
+    if (_showSample) {
+      return [
+        ChatMessage(id: 'sample_u', role: 'user', content: _sampleUser),
+        ChatMessage(
+          id: 'sample_a',
+          role: 'assistant',
+          content: _sampleAssistant,
+          model: _selectedModel.runtimeHint,
+        ),
+      ];
+    }
+    return const [];
+  }
 
   @override
   void initState() {
@@ -76,61 +125,88 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _restorePurchases() async {
-    if (_billingBusy) return;
-    setState(() {
-      _billingBusy = true;
-      _error = null;
-    });
-    try {
-      final result = await _storeBilling.restorePurchases();
-      final auth = context.read<AuthService>();
-      await auth.refreshMe();
-      await _bootstrap();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result.message ??
-                '${result.status} → ${result.planTier ?? 'free'}',
-          ),
-        ),
-      );
-    } catch (e) {
-      setState(() => _error = _friendlyError(e));
-    } finally {
-      if (mounted) setState(() => _billingBusy = false);
-    }
-  }
-
   Future<void> _bootstrap() async {
     try {
       final convos = await _api.listConversations();
       final usage = await _api.getUsage();
       setState(() {
-        _conversations = convos;
+        _conversations = convos.isEmpty ? _demoConversations() : convos;
         _usage = usage;
         _error = null;
       });
       if (convos.isNotEmpty) {
         await _openConversation(convos.first);
+      } else if (_conversations.isNotEmpty) {
+        setState(() {
+          _active = _conversations.first;
+          _showSample = true;
+          _messages = [];
+        });
       }
     } catch (e) {
-      setState(() => _error = _friendlyError(e));
+      // Offline / API down — still show mockup UI with sample content.
+      setState(() {
+        _conversations = _demoConversations();
+        _active = _conversations.first;
+        _showSample = true;
+        _messages = [];
+        _error = null;
+      });
     }
   }
 
+  List<Conversation> _demoConversations() {
+    final now = DateTime.now().toUtc();
+    return [
+      Conversation(
+        id: 'demo_1',
+        title: 'Kế hoạch học tập SysAdmin',
+        modelDefault: 'gemini-flash',
+        updatedAt: now.subtract(const Duration(minutes: 2)).toIso8601String(),
+      ),
+      Conversation(
+        id: 'demo_2',
+        title: 'Refactor Flutter Windows UI',
+        modelDefault: 'gemini-flash',
+        updatedAt: now.subtract(const Duration(hours: 1)).toIso8601String(),
+      ),
+      Conversation(
+        id: 'demo_3',
+        title: 'Microsoft Store IAP checklist',
+        modelDefault: 'gemini-flash',
+        updatedAt: now.subtract(const Duration(hours: 5)).toIso8601String(),
+      ),
+      Conversation(
+        id: 'demo_4',
+        title: 'Viết email xin nghỉ phép',
+        modelDefault: 'gemini-flash',
+        updatedAt: now.subtract(const Duration(days: 1)).toIso8601String(),
+      ),
+    ];
+  }
+
   Future<void> _openConversation(Conversation c) async {
+    if (c.id.startsWith('demo_')) {
+      setState(() {
+        _active = c;
+        _messages = [];
+        _showSample = c.id == 'demo_1';
+        _busy = false;
+      });
+      return;
+    }
     if (_streaming) await _stop();
     setState(() {
       _active = c;
       _busy = true;
+      _showSample = false;
     });
     try {
       final msgs = await _api.listMessages(c.id);
       setState(() {
         _messages = msgs;
         _busy = false;
+        _showSample = msgs.isEmpty;
       });
       _scrollToEnd();
     } catch (e) {
@@ -147,15 +223,29 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final c = await _api.createConversation();
       setState(() {
-        _conversations = [c, ..._conversations];
+        _conversations = [
+          c,
+          ..._conversations.where((x) => !x.id.startsWith('demo_')),
+        ];
         _active = c;
         _messages = [];
+        _showSample = false;
         _busy = false;
       });
     } catch (e) {
+      final local = Conversation(
+        id: 'demo_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'New chat',
+        modelDefault: _selectedModel.runtimeHint,
+        updatedAt: DateTime.now().toUtc().toIso8601String(),
+      );
       setState(() {
-        _error = _friendlyError(e);
+        _conversations = [local, ..._conversations];
+        _active = local;
+        _messages = [];
+        _showSample = false;
         _busy = false;
+        _error = null;
       });
     }
   }
@@ -187,15 +277,48 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty || _streaming) return;
 
     var conversation = _active;
-    if (conversation == null) {
+    if (conversation == null || conversation.id.startsWith('demo_')) {
       await _newChat();
       conversation = _active;
       if (conversation == null) return;
+      // If still demo (API offline), keep local-only UX.
+      if (conversation.id.startsWith('demo_')) {
+        final localConvo = conversation;
+        setState(() {
+          _showSample = false;
+          _messages = [
+            ChatMessage(id: 'local_user', role: 'user', content: text),
+            ChatMessage(
+              id: 'local_assistant',
+              role: 'assistant',
+              content:
+                  'API chưa kết nối. UI đã sẵn sàng — chạy API local rồi gửi lại '
+                  '(runtime: Grok/Gemini). Model UI: ${_selectedModel.label}.',
+              status: 'complete',
+              model: _selectedModel.runtimeHint,
+            ),
+          ];
+          _input.clear();
+          final idx =
+              _conversations.indexWhere((c) => c.id == localConvo.id);
+          if (idx >= 0) {
+            _conversations[idx] = Conversation(
+              id: localConvo.id,
+              title: text.length > 42 ? '${text.substring(0, 42)}…' : text,
+              modelDefault: localConvo.modelDefault,
+              updatedAt: DateTime.now().toUtc().toIso8601String(),
+            );
+          }
+        });
+        _scrollToEnd();
+        return;
+      }
     }
 
     setState(() {
       _busy = true;
       _streaming = true;
+      _showSample = false;
       _error = null;
       _messages = [
         ..._messages,
@@ -309,6 +432,11 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _applyQuickTool(String prompt) {
+    _input.text = prompt;
+    _input.selection = TextSelection.collapsed(offset: _input.text.length);
+  }
+
   String _friendlyError(Object e) {
     if (e is ApiException) {
       if (e.isQuota) {
@@ -347,418 +475,283 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
-    final showBadge = auth.user?.showPoweredBy ?? true;
+    final showUpgrade = !(auth.user?.isPro ?? false);
 
     return Localizations.override(
       context: context,
       locale: _localeOverride,
       child: Builder(
         builder: (context) {
-          final loc = AppLocalizations.of(context);
           return Scaffold(
-            body: DecoratedBox(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFECFEFF),
-                    Color(0xFFF1F5F9),
-                    Color(0xFFE2E8F0),
-                  ],
+            backgroundColor: AppTheme.surface,
+            body: Row(
+              children: [
+                LeftNav(
+                  selectedModelId: _selectedModelId,
+                  onSelectModel: (id) => setState(() => _selectedModelId = id),
+                  onNewChat: _newChat,
+                  onUpgrade: _upgradePro,
+                  billingBusy: _billingBusy,
+                  showUpgrade: showUpgrade,
+                  onNavTap: (label) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('$label — coming soon'),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  },
                 ),
-              ),
-              child: Row(
-                children: [
-                  _Sidebar(
-                    conversations: _conversations,
-                    activeId: _active?.id,
-                    onNew: _newChat,
-                    onSelect: _openConversation,
-                    usage: _usage,
-                    showBadge: showBadge,
-                    billingBusy: _billingBusy,
-                    onUpgrade: _upgradePro,
-                    onRestore: _restorePurchases,
-                    onToggleLocale: () {
-                      setState(() {
-                        _localeOverride = _localeOverride.languageCode == 'en'
-                            ? const Locale('vi')
-                            : const Locale('en');
-                      });
-                    },
-                    onSwitchTier: (tier) async {
-                      await auth.switchStubTier(tier);
-                      await _bootstrap();
-                    },
-                    localeCode: _localeOverride.languageCode,
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _Header(
-                          title: _active?.title ?? loc.appTitle,
-                          plan: auth.user?.planTier ?? 'free',
-                          showBadge: showBadge,
-                          streaming: _streaming,
-                          streamingLabel: loc.streaming,
-                        ),
-                        if (_error != null)
-                          Material(
-                            color: const Color(0xFFFEE2E2),
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _error!,
-                                      style: const TextStyle(
-                                        color: Color(0xFF991B1B),
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    tooltip: 'Dismiss',
-                                    onPressed: () =>
-                                        setState(() => _error = null),
-                                    icon: const Icon(Icons.close, size: 18),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        Expanded(
-                          child: _busy && _messages.isEmpty
-                              ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
-                              : _messages.isEmpty
-                                  ? Center(
-                                      child: Text(
-                                        loc.emptyChat,
-                                        style: TextStyle(
-                                          color: AppTheme.ink
-                                              .withValues(alpha: 0.45),
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    )
-                                  : ListView.builder(
-                                      controller: _scroll,
-                                      padding: const EdgeInsets.fromLTRB(
-                                        28,
-                                        16,
-                                        28,
-                                        16,
-                                      ),
-                                      itemCount: _messages.length,
-                                      itemBuilder: (context, i) =>
-                                          MessageBubble(message: _messages[i]),
-                                    ),
-                        ),
-                        _Composer(
-                          controller: _input,
-                          streaming: _streaming,
-                          onSend: _send,
-                          onStop: _stop,
-                          hint: loc.messageHint,
-                          sendLabel: loc.send,
-                          stopLabel: loc.stop,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                Expanded(child: _buildCenter(auth)),
+                RightPanel(
+                  conversations: _conversations,
+                  activeId: _active?.id,
+                  onSelect: _openConversation,
+                  onQuickTool: _applyQuickTool,
+                  onSeeAll: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Library — coming soon'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           );
         },
       ),
     );
   }
+
+  Widget _buildCenter(AuthService auth) {
+    final msgs = _displayMessages;
+    return ColoredBox(
+      color: AppTheme.surface,
+      child: Column(
+        children: [
+          _ChatHeader(
+            model: _selectedModel,
+            models: kUiModels,
+            onSelectModel: (id) => setState(() => _selectedModelId = id),
+            streaming: _streaming,
+            usage: _usage,
+            onToggleLocale: () {
+              setState(() {
+                _localeOverride = _localeOverride.languageCode == 'en'
+                    ? const Locale('vi')
+                    : const Locale('en');
+              });
+            },
+            localeCode: _localeOverride.languageCode,
+            onRestore: () async {
+              try {
+                final result = await _storeBilling.restorePurchases();
+                await auth.refreshMe();
+                await _bootstrap();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      result.message ??
+                          '${result.status} → ${result.planTier ?? 'free'}',
+                    ),
+                  ),
+                );
+              } catch (e) {
+                setState(() => _error = _friendlyError(e));
+              }
+            },
+            onSwitchTier: (tier) async {
+              await auth.switchStubTier(tier);
+              await _bootstrap();
+            },
+          ),
+          if (_error != null)
+            Material(
+              color: const Color(0xFFFEE2E2),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(color: Color(0xFF991B1B)),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Dismiss',
+                      onPressed: () => setState(() => _error = null),
+                      icon: const Icon(Icons.close, size: 18),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          Expanded(
+            child: _busy && msgs.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    controller: _scroll,
+                    padding: const EdgeInsets.fromLTRB(28, 8, 28, 16),
+                    itemCount: msgs.length,
+                    itemBuilder: (context, i) => MessageBubble(
+                      message: msgs[i],
+                      modelLabel: _selectedModel.label,
+                    ),
+                  ),
+          ),
+          ComposerBar(
+            controller: _input,
+            streaming: _streaming,
+            onSend: _send,
+            onStop: _stop,
+            onAttach: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Attachments — coming soon'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.title,
-    required this.plan,
-    required this.showBadge,
+class _ChatHeader extends StatelessWidget {
+  const _ChatHeader({
+    required this.model,
+    required this.models,
+    required this.onSelectModel,
     required this.streaming,
-    required this.streamingLabel,
+    required this.usage,
+    required this.onToggleLocale,
+    required this.localeCode,
+    required this.onRestore,
+    required this.onSwitchTier,
   });
 
-  final String title;
-  final String plan;
-  final bool showBadge;
+  final UiModel model;
+  final List<UiModel> models;
+  final ValueChanged<String> onSelectModel;
   final bool streaming;
-  final String streamingLabel;
+  final UsageSnapshot? usage;
+  final VoidCallback onToggleLocale;
+  final String localeCode;
+  final VoidCallback onRestore;
+  final ValueChanged<String> onSwitchTier;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 20, 28, 8),
+      padding: const EdgeInsets.fromLTRB(20, 14, 16, 8),
       child: Row(
         children: [
-          Text(
-            AppTheme.brandName,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.4,
-              color: AppTheme.ink,
+          PopupMenuButton<String>(
+            onSelected: onSelectModel,
+            offset: const Offset(0, 40),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppTheme.ink.withValues(alpha: 0.55),
+            itemBuilder: (_) => [
+              for (final m in models)
+                PopupMenuItem(
+                  value: m.id,
+                  child: Row(
+                    children: [
+                      Icon(m.icon, size: 16, color: m.color),
+                      const SizedBox(width: 10),
+                      Text(m.label),
+                    ],
+                  ),
+                ),
+            ],
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.mist,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(model.icon, size: 16, color: model.color),
+                  const SizedBox(width: 8),
+                  Text(
+                    model.label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: AppTheme.inkMuted,
+                  ),
+                ],
               ),
             ),
           ),
+          const Spacer(),
           if (streaming) ...[
             const SizedBox(
               width: 14,
               height: 14,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            const SizedBox(width: 8),
-            Text(
-              streamingLabel,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppTheme.ink.withValues(alpha: 0.55),
-              ),
-            ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
           ],
-          FreeBadge(visible: showBadge),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: plan == 'pro'
-                  ? AppTheme.teal.withValues(alpha: 0.15)
-                  : AppTheme.ink.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              plan == 'pro' ? l10n.proPlan : l10n.freePlan,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Sidebar extends StatelessWidget {
-  const _Sidebar({
-    required this.conversations,
-    required this.activeId,
-    required this.onNew,
-    required this.onSelect,
-    required this.usage,
-    required this.showBadge,
-    required this.billingBusy,
-    required this.onUpgrade,
-    required this.onRestore,
-    required this.onToggleLocale,
-    required this.onSwitchTier,
-    required this.localeCode,
-  });
-
-  final List<Conversation> conversations;
-  final String? activeId;
-  final VoidCallback onNew;
-  final ValueChanged<Conversation> onSelect;
-  final UsageSnapshot? usage;
-  final bool showBadge;
-  final bool billingBusy;
-  final VoidCallback onUpgrade;
-  final VoidCallback onRestore;
-  final VoidCallback onToggleLocale;
-  final ValueChanged<String> onSwitchTier;
-  final String localeCode;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      width: 280,
-      decoration: const BoxDecoration(
-        color: Color(0xCCFFFFFF),
-        border: Border(right: BorderSide(color: AppTheme.border)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-            child: FilledButton.icon(
-              onPressed: onNew,
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(l10n.newChat),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text(
-              l10n.conversations,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.ink.withValues(alpha: 0.5),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              itemCount: conversations.length,
-              itemBuilder: (context, i) {
-                final c = conversations[i];
-                final selected = c.id == activeId;
-                return ListTile(
-                  dense: true,
-                  selected: selected,
-                  selectedTileColor: AppTheme.teal.withValues(alpha: 0.1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  title: Text(
-                    c.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  onTap: () => onSelect(c),
-                );
-              },
-            ),
-          ),
           if (usage != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              padding: const EdgeInsets.only(right: 8),
               child: Text(
-                l10n.usageRemaining(usage!.remaining),
-                style: const TextStyle(fontSize: 12.5),
+                '${usage!.remaining} left',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.inkMuted.withValues(alpha: 0.9),
+                ),
               ),
             ),
-          if (showBadge)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  FilledButton(
-                    onPressed: billingBusy ? null : onUpgrade,
-                    child: Text(
-                      billingBusy ? '…' : l10n.upgradePro,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.storePurchaseHint,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.ink.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
+          IconButton(
+            tooltip: 'Chat history',
+            onPressed: () {},
+            icon: Icon(Icons.history_rounded, color: AppTheme.inkMuted),
+          ),
+          IconButton(
+            tooltip: 'Share',
+            onPressed: () {},
+            icon: Icon(Icons.ios_share_rounded, color: AppTheme.inkMuted),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            onSelected: (v) {
+              if (v == 'locale') onToggleLocale();
+              if (v == 'restore') onRestore();
+              if (v == 'free' || v == 'pro') onSwitchTier(v);
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'locale',
+                child: Text('Language: ${localeCode.toUpperCase()}'),
               ),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: TextButton(
-              onPressed: billingBusy ? null : onRestore,
-              child: Text(l10n.restorePurchases),
-            ),
+              const PopupMenuItem(
+                value: 'restore',
+                child: Text('Restore purchases'),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(value: 'free', child: Text('Stub Free')),
+              const PopupMenuItem(value: 'pro', child: Text('Stub Pro')),
+            ],
+            icon: Icon(Icons.more_horiz, color: AppTheme.inkMuted),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-            child: Row(
-              children: [
-                TextButton(
-                  onPressed: onToggleLocale,
-                  child: Text('${l10n.language}: ${localeCode.toUpperCase()}'),
-                ),
-                const Spacer(),
-                PopupMenuButton<String>(
-                  tooltip: 'Stub tier',
-                  onSelected: onSwitchTier,
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'free', child: Text('Stub Free')),
-                    PopupMenuItem(value: 'pro', child: Text('Stub Pro')),
-                  ],
-                  child: const Icon(Icons.manage_accounts_outlined, size: 20),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Composer extends StatelessWidget {
-  const _Composer({
-    required this.controller,
-    required this.streaming,
-    required this.onSend,
-    required this.onStop,
-    required this.hint,
-    required this.sendLabel,
-    required this.stopLabel,
-  });
-
-  final TextEditingController controller;
-  final bool streaming;
-  final VoidCallback onSend;
-  final VoidCallback onStop;
-  final String hint;
-  final String sendLabel;
-  final String stopLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 8, 28, 24),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              minLines: 1,
-              maxLines: 5,
-              enabled: !streaming,
-              onSubmitted: (_) {
-                if (!streaming) onSend();
-              },
-              decoration: InputDecoration(hintText: hint),
-            ),
-          ),
-          const SizedBox(width: 12),
-          if (streaming)
-            OutlinedButton.icon(
-              onPressed: onStop,
-              icon: const Icon(Icons.stop, size: 18),
-              label: Text(stopLabel),
-            )
-          else
-            FilledButton(
-              onPressed: onSend,
-              child: Text(sendLabel),
-            ),
         ],
       ),
     );
