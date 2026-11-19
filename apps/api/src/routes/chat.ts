@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
 import { newId } from '../lib/id.js';
 import { checkQuota } from '../services/quota.js';
+import { checkRateLimit } from '../services/rate-limit.js';
 import { streamCompletion } from '../services/ai-gateway.js';
 import {
   appendMessage,
@@ -21,8 +22,9 @@ const streamBody = z.object({
 });
 
 /**
- * Streaming chat: SSE-style text/event-stream.
- * Client should consume with an HTTP stream parser (Flutter http/dio).
+ * Streaming chat: SSE text/event-stream.
+ * Persists user + assistant messages; respects message hard quota + token soft-cap.
+ * Client abort closes the upstream vendor stream.
  */
 export async function chatRoutes(app: FastifyInstance): Promise<void> {
   app.post(
@@ -50,6 +52,14 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
+      const rl = checkRateLimit(user.id, quota.rateLimitPerMin);
+      if (!rl.ok) {
+        return reply.code(429).send({
+          error: 'rate_limit_exceeded',
+          retryAfterSec: rl.retryAfterSec,
+        });
+      }
+
       const now = new Date().toISOString();
       const userMsg = {
         id: newId('msg'),
@@ -71,6 +81,10 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
         createdAt: now,
       });
 
+      const abort = new AbortController();
+      const onClose = () => abort.abort();
+      request.raw.on('close', onClose);
+
       reply.hijack();
       reply.raw.writeHead(200, {
         'Content-Type': 'text/event-stream; charset=utf-8',
@@ -80,6 +94,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
       });
 
       const writeEvent = (payload: unknown) => {
+        if (reply.raw.writableEnded) return;
         reply.raw.write(`data: ${JSON.stringify(payload)}\n\n`);
       };
 
@@ -98,66 +113,118 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
 
       let assembled = '';
       const started = Date.now();
+      let finished = false;
+
+      const finalizeAssistant = (patch: {
+        status: 'complete' | 'error';
+        model?: typeof conversation.modelDefault;
+        inputTokens?: number;
+        outputTokens?: number;
+        errorText?: string;
+      }) => {
+        if (finished) return;
+        finished = true;
+        updateMessage(conversation.id, assistantId, {
+          content: assembled || patch.errorText || '',
+          status: patch.status,
+          model: patch.model,
+          inputTokens: patch.inputTokens,
+          outputTokens: patch.outputTokens,
+          latencyMs: Date.now() - started,
+        });
+        conversation.updatedAt = new Date().toISOString();
+        if (conversation.title === 'New chat' && parsed.data.content) {
+          conversation.title = parsed.data.content.slice(0, 60);
+        }
+        saveConversation(conversation);
+      };
 
       try {
         for await (const chunk of streamCompletion({
           planTier: user.planTier,
           model: parsed.data.model,
           messages: history,
+          abortSignal: abort.signal,
         })) {
-          if (chunk.type === 'delta' && chunk.text) {
+          if (abort.signal.aborted) break;
+
+          if (chunk.type === 'meta') {
+            writeEvent({
+              type: 'meta',
+              userMessageId: userMsg.id,
+              assistantMessageId: assistantId,
+              model: chunk.model,
+              vendor: chunk.vendor,
+              stub: chunk.stub ?? false,
+            });
+          } else if (chunk.type === 'delta' && chunk.text) {
             assembled += chunk.text;
+            // Persist partials periodically so disconnect doesn't lose draft.
+            if (assembled.length % 200 < (chunk.text.length || 1)) {
+              updateMessage(conversation.id, assistantId, {
+                content: assembled,
+                status: 'streaming',
+                model: chunk.model,
+              });
+            }
             writeEvent({
               type: 'delta',
               text: chunk.text,
               model: chunk.model,
             });
           } else if (chunk.type === 'done') {
-            updateMessage(conversation.id, assistantId, {
-              content: assembled,
+            finalizeAssistant({
               status: 'complete',
               model: chunk.model,
               inputTokens: chunk.inputTokens,
               outputTokens: chunk.outputTokens,
-              latencyMs: Date.now() - started,
             });
             incrementUsage(user.id, user.planTier, {
               messages: 1,
               inputTokens: chunk.inputTokens ?? 0,
               outputTokens: chunk.outputTokens ?? 0,
             });
-            conversation.updatedAt = new Date().toISOString();
-            if (conversation.title === 'New chat' && parsed.data.content) {
-              conversation.title = parsed.data.content.slice(0, 60);
-            }
-            saveConversation(conversation);
             writeEvent({
               type: 'done',
               model: chunk.model,
               inputTokens: chunk.inputTokens,
               outputTokens: chunk.outputTokens,
+              stub: chunk.stub ?? false,
             });
           } else if (chunk.type === 'error') {
-            updateMessage(conversation.id, assistantId, {
-              content: assembled || chunk.error || 'error',
+            finalizeAssistant({
               status: 'error',
               model: chunk.model,
-              latencyMs: Date.now() - started,
+              errorText: chunk.error,
             });
-            writeEvent({ type: 'error', error: chunk.error });
+            writeEvent({ type: 'error', error: chunk.error, model: chunk.model });
           }
+        }
+
+        if (abort.signal.aborted && !finished) {
+          finalizeAssistant({
+            status: assembled ? 'complete' : 'error',
+            errorText: assembled ? undefined : 'aborted',
+          });
+          if (assembled) {
+            incrementUsage(user.id, user.planTier, {
+              messages: 1,
+              inputTokens: 0,
+              outputTokens: Math.ceil(assembled.length / 4),
+            });
+          }
+          writeEvent({ type: 'error', error: 'aborted' });
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'stream_failed';
-        updateMessage(conversation.id, assistantId, {
-          content: assembled || message,
-          status: 'error',
-          latencyMs: Date.now() - started,
-        });
+        finalizeAssistant({ status: 'error', errorText: message });
         writeEvent({ type: 'error', error: message });
+      } finally {
+        request.raw.off('close', onClose);
+        if (!reply.raw.writableEnded) {
+          reply.raw.end();
+        }
       }
-
-      reply.raw.end();
     },
   );
 }

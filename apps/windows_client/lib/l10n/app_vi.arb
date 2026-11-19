@@ -21,5 +21,6 @@
   "language": "Ngôn ngữ",
   "stubAuthHint": "Auth tạm dùng stub token cho đến khi gắn Supabase.",
   "emptyChat": "Bắt đầu hội thoại",
-  "streaming": "Đang suy nghĩ…"
+  "streaming": "Đang suy nghĩ…",
+  "stop": "Dừng"
 }

@@ -30,11 +30,17 @@ Dev token: `Bearer stub:user_demo:free` or `stub:user_demo:pro`.
 
 ## AI gateway
 
-- Free → `gemini-flash`
-- Pro → `grok` (default) or Gemini variants
-- Without `XAI_API_KEY` / `GOOGLE_GEMINI_API_KEY`, returns a deterministic stub stream
+- Free → `gemini-flash` only
+- Pro → `grok` (default) or `gemini-pro` / `gemini-flash` / `grok-fast`
+- With keys: streams from xAI (`/chat/completions`) or Gemini (`streamGenerateContent?alt=sse`)
+- Missing key for the resolved model → deterministic stub stream (no crash)
+- Cross-vendor fallback once when primary HTTP fails (same cost band)
 - No Anthropic; Cursor is not a runtime
+
+```bash
+npm run test -w @chatai/api   # mock-HTTP gateway + quota tests
+```
 
 ## Storage
 
-In-memory maps for M0. Replace with Postgres + Redis before M1 production staging.
+In-memory maps (usage + conversations). Redis/Postgres still optional for M1 local.
