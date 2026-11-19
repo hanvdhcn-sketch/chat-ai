@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -26,8 +28,12 @@ class _ChatScreenState extends State<ChatScreen> {
   List<ChatMessage> _messages = [];
   UsageSnapshot? _usage;
   bool _busy = false;
+  bool _streaming = false;
   String? _error;
   Locale _localeOverride = const Locale('en');
+
+  Future<void> Function()? _cancelStream;
+  StreamSubscription<Map<String, dynamic>>? _streamSub;
 
   @override
   void initState() {
@@ -50,11 +56,12 @@ class _ChatScreenState extends State<ChatScreen> {
         await _openConversation(convos.first);
       }
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = _friendlyError(e));
     }
   }
 
   Future<void> _openConversation(Conversation c) async {
+    if (_streaming) await _stop();
     setState(() {
       _active = c;
       _busy = true;
@@ -68,13 +75,14 @@ class _ChatScreenState extends State<ChatScreen> {
       _scrollToEnd();
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = _friendlyError(e);
         _busy = false;
       });
     }
   }
 
   Future<void> _newChat() async {
+    if (_streaming) await _stop();
     setState(() => _busy = true);
     try {
       final c = await _api.createConversation();
@@ -86,15 +94,37 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = _friendlyError(e);
         _busy = false;
       });
     }
   }
 
+  Future<void> _stop() async {
+    await _streamSub?.cancel();
+    _streamSub = null;
+    final cancel = _cancelStream;
+    _cancelStream = null;
+    await cancel?.call();
+    if (!mounted) return;
+    setState(() {
+      _streaming = false;
+      _busy = false;
+      if (_messages.isNotEmpty &&
+          _messages.last.role == 'assistant' &&
+          _messages.last.status == 'streaming') {
+        _messages.last.status =
+            _messages.last.content.isEmpty ? 'error' : 'complete';
+        if (_messages.last.content.isEmpty) {
+          _messages.last.content = 'Stopped';
+        }
+      }
+    });
+  }
+
   Future<void> _send() async {
     final text = _input.text.trim();
-    if (text.isEmpty || _busy) return;
+    if (text.isEmpty || _streaming) return;
 
     var conversation = _active;
     if (conversation == null) {
@@ -105,6 +135,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     setState(() {
       _busy = true;
+      _streaming = true;
       _error = null;
       _messages = [
         ..._messages,
@@ -120,49 +151,117 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     _scrollToEnd();
 
+    final stream = _api.streamMessage(
+      conversationId: conversation.id,
+      content: text,
+    );
+    _cancelStream = stream.cancel;
+
     try {
-      await for (final event in _api.streamMessage(
-        conversationId: conversation.id,
-        content: text,
-      )) {
-        final type = event['type'] as String?;
-        if (type == 'delta') {
-          final delta = event['text'] as String? ?? '';
+      final done = Completer<void>();
+      _streamSub = stream.events.listen(
+        (event) {
+          final type = event['type'] as String?;
+          if (type == 'meta') {
+            final aid = event['assistantMessageId'] as String?;
+            final uid = event['userMessageId'] as String?;
+            setState(() {
+              if (uid != null && _messages.length >= 2) {
+                _messages[_messages.length - 2] = ChatMessage(
+                  id: uid,
+                  role: 'user',
+                  content: text,
+                );
+              }
+              if (aid != null && _messages.isNotEmpty) {
+                final prev = _messages.last;
+                _messages[_messages.length - 1] = ChatMessage(
+                  id: aid,
+                  role: 'assistant',
+                  content: prev.content,
+                  status: 'streaming',
+                  model: event['model'] as String? ?? prev.model,
+                );
+              }
+            });
+          } else if (type == 'delta') {
+            final delta = event['text'] as String? ?? '';
+            setState(() {
+              final last = _messages.last;
+              last.content = '${last.content}$delta';
+              last.model = event['model'] as String? ?? last.model;
+            });
+            _scrollToEnd();
+          } else if (type == 'done') {
+            setState(() {
+              _messages.last.status = 'complete';
+              _messages.last.model = event['model'] as String?;
+            });
+          } else if (type == 'error') {
+            setState(() {
+              _messages.last.status = 'error';
+              if (_messages.last.content.isEmpty) {
+                _messages.last.content =
+                    event['error'] as String? ?? 'stream error';
+              }
+              _error = event['error'] as String? ?? _error;
+            });
+          }
+        },
+        onError: (Object e) {
           setState(() {
-            final last = _messages.last;
-            last.content = '${last.content}$delta';
+            _error = _friendlyError(e);
+            if (_messages.isNotEmpty && _messages.last.role == 'assistant') {
+              _messages.last.status = 'error';
+              if (_messages.last.content.isEmpty) {
+                _messages.last.content = _error!;
+              }
+            }
           });
-          _scrollToEnd();
-        } else if (type == 'done') {
-          setState(() {
-            _messages.last.status = 'complete';
-            _messages.last.model = event['model'] as String?;
-          });
-        } else if (type == 'error') {
-          setState(() {
-            _messages.last.status = 'error';
-            _messages.last.content =
-                event['error'] as String? ?? 'stream error';
-          });
-        }
+          if (!done.isCompleted) done.complete();
+        },
+        onDone: () {
+          if (!done.isCompleted) done.complete();
+        },
+        cancelOnError: true,
+      );
+
+      await done.future;
+      if (!mounted) return;
+      try {
+        final usage = await _api.getUsage();
+        final convos = await _api.listConversations();
+        setState(() {
+          _usage = usage;
+          _conversations = convos;
+        });
+      } catch (_) {/* ignore refresh errors after stream */}
+    } finally {
+      await _streamSub?.cancel();
+      _streamSub = null;
+      _cancelStream = null;
+      if (mounted) {
+        setState(() {
+          _streaming = false;
+          _busy = false;
+        });
       }
-      final usage = await _api.getUsage();
-      final convos = await _api.listConversations();
-      setState(() {
-        _usage = usage;
-        _conversations = convos;
-        _busy = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _busy = false;
-        if (_messages.isNotEmpty && _messages.last.role == 'assistant') {
-          _messages.last.status = 'error';
-          _messages.last.content = e.toString();
-        }
-      });
     }
+  }
+
+  String _friendlyError(Object e) {
+    if (e is ApiException) {
+      if (e.isQuota) {
+        return e.code == 'token_soft_cap_exceeded'
+            ? 'Token soft-cap reached for today. Upgrade or try tomorrow.'
+            : 'Daily message quota reached. Upgrade to Pro for more.';
+      }
+      if (e.isRateLimit) {
+        return 'Too many requests — wait a moment and try again.';
+      }
+      return e.code ?? e.toString();
+    }
+    return e.toString();
   }
 
   void _scrollToEnd() {
@@ -178,6 +277,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    _streamSub?.cancel();
+    _cancelStream?.call();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
@@ -236,48 +337,71 @@ class _ChatScreenState extends State<ChatScreen> {
                           title: _active?.title ?? loc.appTitle,
                           plan: auth.user?.planTier ?? 'free',
                           showBadge: showBadge,
+                          streaming: _streaming,
+                          streamingLabel: loc.streaming,
                         ),
                         if (_error != null)
                           Material(
                             color: const Color(0xFFFEE2E2),
                             child: Padding(
                               padding: const EdgeInsets.all(10),
-                              child: Text(
-                                _error!,
-                                style: const TextStyle(color: Color(0xFF991B1B)),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _error!,
+                                      style: const TextStyle(
+                                        color: Color(0xFF991B1B),
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Dismiss',
+                                    onPressed: () =>
+                                        setState(() => _error = null),
+                                    icon: const Icon(Icons.close, size: 18),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         Expanded(
-                          child: _messages.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    loc.emptyChat,
-                                    style: TextStyle(
-                                      color: AppTheme.ink.withValues(alpha: 0.45),
-                                      fontSize: 16,
-                                    ),
-                                  ),
+                          child: _busy && _messages.isEmpty
+                              ? const Center(
+                                  child: CircularProgressIndicator(),
                                 )
-                              : ListView.builder(
-                                  controller: _scroll,
-                                  padding: const EdgeInsets.fromLTRB(
-                                    28,
-                                    16,
-                                    28,
-                                    16,
-                                  ),
-                                  itemCount: _messages.length,
-                                  itemBuilder: (context, i) =>
-                                      MessageBubble(message: _messages[i]),
-                                ),
+                              : _messages.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        loc.emptyChat,
+                                        style: TextStyle(
+                                          color: AppTheme.ink
+                                              .withValues(alpha: 0.45),
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      controller: _scroll,
+                                      padding: const EdgeInsets.fromLTRB(
+                                        28,
+                                        16,
+                                        28,
+                                        16,
+                                      ),
+                                      itemCount: _messages.length,
+                                      itemBuilder: (context, i) =>
+                                          MessageBubble(message: _messages[i]),
+                                    ),
                         ),
                         _Composer(
                           controller: _input,
-                          busy: _busy,
+                          streaming: _streaming,
                           onSend: _send,
+                          onStop: _stop,
                           hint: loc.messageHint,
                           sendLabel: loc.send,
+                          stopLabel: loc.stop,
                         ),
                       ],
                     ),
@@ -297,11 +421,15 @@ class _Header extends StatelessWidget {
     required this.title,
     required this.plan,
     required this.showBadge,
+    required this.streaming,
+    required this.streamingLabel,
   });
 
   final String title;
   final String plan;
   final bool showBadge;
+  final bool streaming;
+  final String streamingLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -330,6 +458,22 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
+          if (streaming) ...[
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              streamingLabel,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.ink.withValues(alpha: 0.55),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
           FreeBadge(visible: showBadge),
           const SizedBox(width: 10),
           Container(
@@ -444,9 +588,7 @@ class _Sidebar extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: OutlinedButton(
-                onPressed: () {
-                  // Open Stripe Checkout via system browser (API /v1/billing/checkout).
-                },
+                onPressed: () {},
                 child: Text(l10n.upgradePro),
               ),
             ),
@@ -480,17 +622,21 @@ class _Sidebar extends StatelessWidget {
 class _Composer extends StatelessWidget {
   const _Composer({
     required this.controller,
-    required this.busy,
+    required this.streaming,
     required this.onSend,
+    required this.onStop,
     required this.hint,
     required this.sendLabel,
+    required this.stopLabel,
   });
 
   final TextEditingController controller;
-  final bool busy;
+  final bool streaming;
   final VoidCallback onSend;
+  final VoidCallback onStop;
   final String hint;
   final String sendLabel;
+  final String stopLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -503,16 +649,25 @@ class _Composer extends StatelessWidget {
               controller: controller,
               minLines: 1,
               maxLines: 5,
-              enabled: !busy,
-              onSubmitted: (_) => onSend(),
+              enabled: !streaming,
+              onSubmitted: (_) {
+                if (!streaming) onSend();
+              },
               decoration: InputDecoration(hintText: hint),
             ),
           ),
           const SizedBox(width: 12),
-          FilledButton(
-            onPressed: busy ? null : onSend,
-            child: Text(sendLabel),
-          ),
+          if (streaming)
+            OutlinedButton.icon(
+              onPressed: onStop,
+              icon: const Icon(Icons.stop, size: 18),
+              label: Text(stopLabel),
+            )
+          else
+            FilledButton(
+              onPressed: onSend,
+              child: Text(sendLabel),
+            ),
         ],
       ),
     );

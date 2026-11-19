@@ -10,7 +10,8 @@
     "dev:api": "npm run dev -w @chatai/api",
     "build:api": "npm run build -w @chatai/api",
     "start:api": "npm run start -w @chatai/api",
-    "typecheck:api": "npm run typecheck -w @chatai/api"
+    "typecheck:api": "npm run typecheck -w @chatai/api",
+    "test:api": "npm run test -w @chatai/api"
   },
   "engines": {
     "node": ">=20"

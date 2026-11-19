@@ -41,6 +41,7 @@ class AppLocalizations {
       : 'Dev auth uses stub tokens until Supabase is wired.';
   String get emptyChat => isVi ? 'Bắt đầu hội thoại' : 'Start a conversation';
   String get streaming => isVi ? 'Đang suy nghĩ…' : 'Thinking…';
+  String get stop => isVi ? 'Dừng' : 'Stop';
 }
 
 class _AppLocalizationsDelegate

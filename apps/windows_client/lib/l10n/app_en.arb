@@ -21,5 +21,6 @@
   "language": "Language",
   "stubAuthHint": "Dev auth uses stub tokens until Supabase is wired.",
   "emptyChat": "Start a conversation",
-  "streaming": "Thinking…"
+  "streaming": "Thinking…",
+  "stop": "Stop"
 }

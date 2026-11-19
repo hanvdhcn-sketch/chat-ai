@@ -60,8 +60,10 @@ flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3001
 | `SUPABASE_JWT_SECRET` | API only | Verify JWTs |
 | `DATABASE_URL` | API | Postgres |
 | `REDIS_URL` | API | Rate limit / usage cache |
-| `XAI_API_KEY` | API only | Grok inference |
-| `GOOGLE_GEMINI_API_KEY` | API only | Gemini inference |
+| `XAI_API_KEY` | API only | Grok inference (SSE via OpenAI-compatible chat completions) |
+| `GOOGLE_GEMINI_API_KEY` | API only | Gemini inference (`streamGenerateContent` SSE) |
+| `XAI_GROK_MODEL` / `XAI_GROK_FAST_MODEL` | API | Optional Grok model ids |
+| `GEMINI_FLASH_MODEL` / `GEMINI_PRO_MODEL` | API | Optional Gemini model ids |
 | `STRIPE_SECRET_KEY` | API only | Checkout / portal |
 | `STRIPE_WEBHOOK_SECRET` | API only | Webhook verify |
 | `STRIPE_PRICE_PRO_MONTHLY` | API | Pro $9.99/mo price id |
@@ -95,7 +97,10 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 | `npm run dev:api` | Fastify watch mode |
 | `npm run build:api` | Compile API to `dist/` |
 | `npm run typecheck:api` | TypeScript check |
+| `npm run test:api` | Gateway + quota unit tests (mock HTTP) |
 
 ## Milestone
 
-This repo is **M0 skeleton**: stubs for auth verify, conversations/messages, AI gateway, usage/quota, Stripe webhook. Wire real Supabase JWT, vendor SDKs, Postgres, and Redis in M1+.
+**M1 (chat core):** real xAI Grok + Gemini gateway when keys are set; clear stub stream when missing; SSE persist; Free→Gemini Flash / Pro→Grok(+Gemini); message hard quota + token soft-cap + in-memory rate limit; Flutter stop/loading/error UX.
+
+Still stubs: Supabase JWT verify, Postgres, Redis, Stripe live Checkout.

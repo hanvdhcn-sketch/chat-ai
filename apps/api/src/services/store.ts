@@ -3,7 +3,7 @@ import type { PlanTier } from '../config.js';
 import { config } from '../config.js';
 
 /**
- * In-memory store for M0 scaffold. Replace with Postgres (Supabase/Neon) + Redis.
+ * In-memory store for M0/M1. Replace with Postgres (Supabase/Neon) + Redis.
  */
 const conversations = new Map<string, Conversation>();
 const messages = new Map<string, Message[]>();
@@ -107,4 +107,16 @@ export function incrementUsage(
   snap.outputTokens += opts.outputTokens ?? 0;
   usageByUser.set(userId, snap);
   return snap;
+}
+
+/** Test helper */
+export function resetStore(): void {
+  conversations.clear();
+  messages.clear();
+  usageByUser.clear();
+}
+
+/** Test helper — force usage counters */
+export function setUsageForTests(snap: UsageSnapshot): void {
+  usageByUser.set(snap.userId, snap);
 }
