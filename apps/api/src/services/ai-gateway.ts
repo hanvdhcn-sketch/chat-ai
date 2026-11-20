@@ -10,9 +10,19 @@ import {
 export type { ModelId };
 export { resolveModel } from './model-catalog.js';
 
+/** OpenAI-compatible content part for xAI vision. */
+export type ChatContentPart =
+  | { type: 'text'; text: string }
+  | {
+      type: 'image_url';
+      image_url: { url: string; detail?: 'auto' | 'low' | 'high' };
+    };
+
+export type ChatContent = string | ChatContentPart[];
+
 export interface ChatTurn {
   role: 'user' | 'assistant' | 'system';
-  content: string;
+  content: ChatContent;
 }
 
 export interface StreamChunk {
@@ -38,8 +48,19 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function contentToPlain(content: ChatContent): string {
+  if (typeof content === 'string') return content;
+  return content
+    .map((p) => (p.type === 'text' ? p.text : '[image]'))
+    .join(' ');
+}
+
 function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil(text.length / 4));
+}
+
+function estimateTurnTokens(turn: ChatTurn): number {
+  return estimateTokens(contentToPlain(turn.content));
 }
 
 function resolveKeys(deps: GatewayDeps) {
@@ -93,8 +114,9 @@ export async function* streamCompletion(
   const fetchFn = deps.fetchFn ?? fetch;
   const keys = resolveKeys(deps);
   const model = resolveModel(opts.planTier, opts.model);
-  const lastUser =
+  const lastUserRaw =
     [...opts.messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+  const lastUser = contentToPlain(lastUserRaw);
 
   if (!keys.xaiApiKey || !isGrokModel(model)) {
     yield* stubStream(model, lastUser, opts.abortSignal);
@@ -119,6 +141,19 @@ export async function* streamCompletion(
   }
 }
 
+function vendorModelForMessages(model: ModelId, messages: ChatTurn[]): string {
+  const hasImage = messages.some(
+    (m) =>
+      Array.isArray(m.content) &&
+      m.content.some((p) => p.type === 'image_url'),
+  );
+  if (hasImage) {
+    // xAI vision-capable Grok id when the turn includes images (still Grok-only).
+    return process.env.XAI_GROK_VISION_MODEL ?? 'grok-2-vision-1212';
+  }
+  return vendorModelId(model);
+}
+
 async function* streamXai(opts: {
   model: ModelId;
   messages: ChatTurn[];
@@ -126,7 +161,7 @@ async function* streamXai(opts: {
   fetchFn: FetchLike;
   keys: ReturnType<typeof resolveKeys>;
 }): AsyncGenerator<StreamChunk> {
-  const apiModel = vendorModelId(opts.model);
+  const apiModel = vendorModelForMessages(opts.model, opts.messages);
   const url = `${opts.keys.xaiBaseUrl.replace(/\/$/, '')}/chat/completions`;
   const res = await opts.fetchFn(url, {
     method: 'POST',
@@ -180,8 +215,9 @@ async function* streamXai(opts: {
   }
 
   if (!inputTokens) {
-    inputTokens = estimateTokens(
-      opts.messages.map((m) => m.content).join(' '),
+    inputTokens = opts.messages.reduce(
+      (sum, m) => sum + estimateTurnTokens(m),
+      0,
     );
   }
   if (!outputTokens) outputTokens = estimateTokens(assembled);
