@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
 
-class ComposerBar extends StatelessWidget {
+class ComposerBar extends StatefulWidget {
   const ComposerBar({
     super.key,
     required this.controller,
@@ -19,6 +20,53 @@ class ComposerBar extends StatelessWidget {
   final VoidCallback onStop;
   final String hint;
   final VoidCallback? onAttach;
+
+  @override
+  State<ComposerBar> createState() => _ComposerBarState();
+}
+
+class _ComposerBarState extends State<ComposerBar> {
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode(onKeyEvent: _onComposerKeyEvent);
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _onComposerKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final isEnter = event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.numpadEnter;
+    if (!isEnter) {
+      return KeyEventResult.ignored;
+    }
+
+    // Let IME finish composition (e.g. Vietnamese, Japanese) before sending.
+    if (widget.controller.value.isComposingRangeValid) {
+      return KeyEventResult.ignored;
+    }
+
+    // Shift+Enter inserts a newline via default TextField behavior.
+    if (HardwareKeyboard.instance.isShiftPressed) {
+      return KeyEventResult.ignored;
+    }
+
+    // Enter sends (same as Send button); skip empty / whitespace-only.
+    if (!widget.streaming && widget.controller.text.trim().isNotEmpty) {
+      widget.onSend();
+    }
+    return KeyEventResult.handled;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +90,7 @@ class ComposerBar extends StatelessWidget {
           children: [
             IconButton(
               tooltip: 'Attach',
-              onPressed: onAttach,
+              onPressed: widget.onAttach,
               icon: Icon(
                 Icons.attach_file_rounded,
                 color: AppTheme.inkMuted.withValues(alpha: 0.9),
@@ -50,16 +98,16 @@ class ComposerBar extends StatelessWidget {
             ),
             Expanded(
               child: TextField(
-                controller: controller,
+                controller: widget.controller,
+                focusNode: _focusNode,
                 minLines: 1,
                 maxLines: 5,
-                enabled: !streaming,
-                onSubmitted: (_) {
-                  if (!streaming) onSend();
-                },
+                enabled: !widget.streaming,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
                 style: const TextStyle(fontSize: 14.5, height: 1.4),
                 decoration: InputDecoration(
-                  hintText: hint,
+                  hintText: widget.hint,
                   filled: false,
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -85,9 +133,9 @@ class ComposerBar extends StatelessWidget {
               size: 20,
             ),
             const SizedBox(width: 4),
-            if (streaming)
+            if (widget.streaming)
               IconButton.filled(
-                onPressed: onStop,
+                onPressed: widget.onStop,
                 style: IconButton.styleFrom(
                   backgroundColor: const Color(0xFFEF4444),
                   foregroundColor: Colors.white,
@@ -96,7 +144,11 @@ class ComposerBar extends StatelessWidget {
               )
             else
               IconButton.filled(
-                onPressed: onSend,
+                onPressed: () {
+                  if (widget.controller.text.trim().isNotEmpty) {
+                    widget.onSend();
+                  }
+                },
                 style: IconButton.styleFrom(
                   backgroundColor: AppTheme.accent,
                   foregroundColor: Colors.white,
