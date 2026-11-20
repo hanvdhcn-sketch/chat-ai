@@ -1,13 +1,9 @@
 import type { PlanTier } from '../config.js';
 import type { ModelId } from '../types/index.js';
 
-/** Logical model → vendor API model id (overridable via env). */
+/** Logical model → xAI vendor API model id (overridable via env). */
 export function vendorModelId(model: ModelId): string {
   switch (model) {
-    case 'gemini-flash':
-      return process.env.GEMINI_FLASH_MODEL ?? 'gemini-2.0-flash';
-    case 'gemini-pro':
-      return process.env.GEMINI_PRO_MODEL ?? 'gemini-2.0-flash';
     case 'grok-fast':
       return process.env.XAI_GROK_FAST_MODEL ?? 'grok-3-mini';
     case 'grok':
@@ -20,35 +16,35 @@ export function isGrokModel(model: ModelId): boolean {
   return model === 'grok' || model === 'grok-fast';
 }
 
-export function isGeminiModel(model: ModelId): boolean {
-  return model === 'gemini-flash' || model === 'gemini-pro';
+/**
+ * Normalize legacy client/DB model ids (Gemini-era) onto Grok.
+ */
+export function coerceModelId(raw?: string | null): ModelId | undefined {
+  if (!raw) return undefined;
+  if (raw === 'grok' || raw === 'grok-fast') return raw;
+  if (raw === 'gemini-flash' || raw === 'gemini-pro') return 'grok-fast';
+  return undefined;
 }
 
 /**
- * Free → Gemini Flash only (ignore client request for Grok).
- * Pro → Grok default; allow Gemini Flash/Pro and Grok variants.
+ * Free → Grok Fast (quota-limited).
+ * Pro → Grok (default); allow grok-fast when requested.
+ * Pro upgrade = full Grok API path.
  */
 export function resolveModel(
   planTier: PlanTier,
   requested?: ModelId,
 ): ModelId {
   if (planTier === 'free') {
-    return 'gemini-flash';
+    return 'grok-fast';
   }
-  if (
-    requested === 'gemini-flash' ||
-    requested === 'gemini-pro' ||
-    requested === 'grok-fast' ||
-    requested === 'grok'
-  ) {
+  if (requested === 'grok-fast' || requested === 'grok') {
     return requested;
   }
   return 'grok';
 }
 
-/** Same cost-band fallback when primary vendor fails. */
-export function fallbackModel(model: ModelId): ModelId | null {
-  if (isGeminiModel(model)) return 'grok-fast';
-  if (isGrokModel(model)) return 'gemini-flash';
+/** No cross-vendor fallback — Grok only. */
+export function fallbackModel(_model: ModelId): ModelId | null {
   return null;
 }

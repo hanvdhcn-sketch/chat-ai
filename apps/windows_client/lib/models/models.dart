@@ -44,7 +44,7 @@ class Conversation {
     return Conversation(
       id: json['id'] as String,
       title: json['title'] as String? ?? 'Chat',
-      modelDefault: json['modelDefault'] as String? ?? 'gemini-flash',
+      modelDefault: json['modelDefault'] as String? ?? 'grok',
       updatedAt: json['updatedAt'] as String? ?? '',
     );
   }

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { resolveModel, streamCompletion } from './ai-gateway.js';
-import { fallbackModel } from './model-catalog.js';
+import { coerceModelId, fallbackModel } from './model-catalog.js';
 
 function sseResponse(lines: string[], status = 200): Response {
   const body = lines.map((l) => `data: ${l}\n\n`).join('');
@@ -12,7 +12,14 @@ function sseResponse(lines: string[], status = 200): Response {
 }
 
 async function collect(
-  gen: AsyncGenerator<{ type: string; text?: string; model?: string; stub?: boolean; error?: string; vendor?: string }>,
+  gen: AsyncGenerator<{
+    type: string;
+    text?: string;
+    model?: string;
+    stub?: boolean;
+    error?: string;
+    vendor?: string;
+  }>,
 ) {
   const out: Array<Record<string, unknown>> = [];
   for await (const chunk of gen) out.push(chunk as Record<string, unknown>);
@@ -20,41 +27,44 @@ async function collect(
 }
 
 describe('resolveModel', () => {
-  it('forces Gemini Flash for Free regardless of request', () => {
-    assert.equal(resolveModel('free', 'grok'), 'gemini-flash');
-    assert.equal(resolveModel('free', 'gemini-pro'), 'gemini-flash');
-    assert.equal(resolveModel('free'), 'gemini-flash');
+  it('forces Grok Fast for Free regardless of request', () => {
+    assert.equal(resolveModel('free', 'grok'), 'grok-fast');
+    assert.equal(resolveModel('free', 'grok-fast'), 'grok-fast');
+    assert.equal(resolveModel('free'), 'grok-fast');
   });
 
-  it('defaults Pro to Grok and honors Gemini / Grok picks', () => {
+  it('defaults Pro to Grok and honors grok-fast', () => {
     assert.equal(resolveModel('pro'), 'grok');
-    assert.equal(resolveModel('pro', 'gemini-pro'), 'gemini-pro');
     assert.equal(resolveModel('pro', 'grok-fast'), 'grok-fast');
+    assert.equal(resolveModel('pro', 'grok'), 'grok');
   });
 
-  it('maps cross-vendor fallback', () => {
-    assert.equal(fallbackModel('gemini-flash'), 'grok-fast');
-    assert.equal(fallbackModel('grok'), 'gemini-flash');
+  it('has no cross-vendor fallback', () => {
+    assert.equal(fallbackModel('grok'), null);
+    assert.equal(fallbackModel('grok-fast'), null);
+  });
+
+  it('coerces legacy Gemini ids onto Grok', () => {
+    assert.equal(coerceModelId('gemini-flash'), 'grok-fast');
+    assert.equal(coerceModelId('gemini-pro'), 'grok-fast');
+    assert.equal(coerceModelId('grok'), 'grok');
   });
 });
 
 describe('streamCompletion', () => {
-  it('falls back to stub when no keys (no crash)', async () => {
+  it('falls back to stub when no XAI key (no crash)', async () => {
     const chunks = await collect(
       streamCompletion(
         {
           planTier: 'free',
           messages: [{ role: 'user', content: 'hi' }],
         },
-        { xaiApiKey: '', geminiApiKey: '' },
+        { xaiApiKey: '' },
       ),
     );
     assert.ok(chunks.some((c) => c.type === 'delta'));
     assert.ok(chunks.some((c) => c.type === 'done' && c.stub === true));
-    assert.equal(
-      chunks.find((c) => c.type === 'done')?.model,
-      'gemini-flash',
-    );
+    assert.equal(chunks.find((c) => c.type === 'done')?.model, 'grok-fast');
   });
 
   it('streams xAI Grok SSE when key + fetch mock present', async () => {
@@ -76,7 +86,7 @@ describe('streamCompletion', () => {
           model: 'grok',
           messages: [{ role: 'user', content: 'hi' }],
         },
-        { fetchFn, xaiApiKey: 'test-xai', geminiApiKey: '' },
+        { fetchFn, xaiApiKey: 'test-xai' },
       ),
     );
 
@@ -91,52 +101,9 @@ describe('streamCompletion', () => {
     assert.equal(done?.outputTokens, 2);
   });
 
-  it('streams Gemini SSE when key + fetch mock present', async () => {
-    const fetchFn: typeof fetch = async (input) => {
-      assert.match(String(input), /generativelanguage\.googleapis\.com/);
-      return sseResponse([
-        JSON.stringify({
-          candidates: [{ content: { parts: [{ text: 'Xin' }] } }],
-        }),
-        JSON.stringify({
-          candidates: [{ content: { parts: [{ text: ' chào' }] } }],
-          usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 4 },
-        }),
-      ]);
-    };
-
-    const chunks = await collect(
-      streamCompletion(
-        {
-          planTier: 'free',
-          messages: [{ role: 'user', content: 'hi' }],
-        },
-        { fetchFn, geminiApiKey: 'test-gemini', xaiApiKey: '' },
-      ),
-    );
-
-    const text = chunks
-      .filter((c) => c.type === 'delta')
-      .map((c) => c.text)
-      .join('');
-    assert.equal(text, 'Xin chào');
-    assert.equal(chunks.find((c) => c.type === 'done')?.vendor, 'gemini');
-  });
-
-  it('falls back to Gemini when Grok HTTP fails and Gemini key exists', async () => {
-    let calls = 0;
-    const fetchFn: typeof fetch = async (input) => {
-      calls += 1;
-      const url = String(input);
-      if (url.includes('api.x.ai')) {
-        return new Response('boom', { status: 500 });
-      }
-      return sseResponse([
-        JSON.stringify({
-          candidates: [{ content: { parts: [{ text: 'fallback-ok' }] } }],
-        }),
-      ]);
-    };
+  it('returns error when Grok HTTP fails (no Gemini fallback)', async () => {
+    const fetchFn: typeof fetch = async () =>
+      new Response('boom', { status: 500 });
 
     const chunks = await collect(
       streamCompletion(
@@ -145,15 +112,11 @@ describe('streamCompletion', () => {
           model: 'grok',
           messages: [{ role: 'user', content: 'hi' }],
         },
-        { fetchFn, xaiApiKey: 'xai', geminiApiKey: 'gem' },
+        { fetchFn, xaiApiKey: 'xai' },
       ),
     );
 
-    assert.ok(calls >= 2);
-    const text = chunks
-      .filter((c) => c.type === 'delta')
-      .map((c) => c.text)
-      .join('');
-    assert.equal(text, 'fallback-ok');
+    assert.ok(chunks.some((c) => c.type === 'error'));
+    assert.match(String(chunks.find((c) => c.type === 'error')?.error), /xai_http/);
   });
 });

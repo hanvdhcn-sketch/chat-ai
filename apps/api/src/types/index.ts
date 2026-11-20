@@ -2,11 +2,7 @@ import type { PlanTier } from '../config.js';
 
 export type MessageRole = 'user' | 'assistant' | 'system';
 
-export type ModelId =
-  | 'gemini-flash'
-  | 'gemini-pro'
-  | 'grok-fast'
-  | 'grok';
+export type ModelId = 'grok-fast' | 'grok';
 
 export type StoreSubscriptionStatus =
   | 'active'

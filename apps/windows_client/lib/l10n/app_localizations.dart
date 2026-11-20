@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'ChatAI'**
+  /// **'Orbita'**
   String get appTitle;
 
   /// No description provided for @newChat.
@@ -119,7 +119,7 @@ abstract class AppLocalizations {
   /// No description provided for @messageHint.
   ///
   /// In en, this message translates to:
-  /// **'Message ChatAI…'**
+  /// **'Message Orbita…'**
   String get messageHint;
 
   /// No description provided for @signIn.
@@ -149,7 +149,7 @@ abstract class AppLocalizations {
   /// No description provided for @poweredBy.
   ///
   /// In en, this message translates to:
-  /// **'Powered by ChatAI'**
+  /// **'Powered by Orbita'**
   String get poweredBy;
 
   /// No description provided for @freePlan.

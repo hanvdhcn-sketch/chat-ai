@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
-import 'model_catalog.dart';
 
 class LeftNav extends StatelessWidget {
   const LeftNav({
     super.key,
-    required this.selectedModelId,
-    required this.onSelectModel,
     required this.onNewChat,
     required this.onUpgrade,
     required this.billingBusy,
@@ -16,8 +13,6 @@ class LeftNav extends StatelessWidget {
     this.onNavTap,
   });
 
-  final String selectedModelId;
-  final ValueChanged<String> onSelectModel;
   final VoidCallback onNewChat;
   final VoidCallback onUpgrade;
   final bool billingBusy;
@@ -61,48 +56,6 @@ class LeftNav extends StatelessWidget {
                     icon: item.$1,
                     label: item.$2,
                     onTap: () => onNavTap?.call(item.$2),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(
-                    'Models',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Column(
-                    children: [
-                      for (final m in kUiModels)
-                        _ModelTile(
-                          model: m,
-                          selected: m.id == selectedModelId,
-                          onTap: () => onSelectModel(m.id),
-                        ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton(
-                          onPressed: () => onNavTap?.call('More Models'),
-                          style: TextButton.styleFrom(
-                            foregroundColor:
-                                Colors.white.withValues(alpha: 0.55),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
-                            ),
-                          ),
-                          child: const Text('More Models >'),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
                 const Spacer(),
@@ -278,70 +231,6 @@ class _NavTile extends StatelessWidget {
   }
 }
 
-class _ModelTile extends StatelessWidget {
-  const _ModelTile({
-    required this.model,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final UiModel model;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Material(
-        color: selected ? AppTheme.accent : Colors.transparent,
-        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? Colors.white.withValues(alpha: 0.18)
-                        : model.color.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    model.icon,
-                    size: 16,
-                    color: selected ? Colors.white : model.color,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    model.label,
-                    style: TextStyle(
-                      color: selected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.85),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.5,
-                    ),
-                  ),
-                ),
-                if (selected)
-                  const Icon(Icons.check, color: Colors.white, size: 18),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _UpgradeCard extends StatelessWidget {
   const _UpgradeCard({required this.busy, required this.onUpgrade});
 
@@ -388,7 +277,7 @@ class _UpgradeCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Unlock more models, features and higher limits.',
+            'Unlock Grok API access, more features, and higher limits.',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.55),
               fontSize: 12,

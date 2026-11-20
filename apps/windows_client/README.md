@@ -1,7 +1,9 @@
-# ChatAI — Flutter Windows client
+# Orbita — Flutter Windows client
 
-Brand placeholder: **ChatAI**. Target: Microsoft Store via MSIX.  
-**Billing:** Microsoft Store subscription / IAP (not Stripe).
+Display name: **Orbita**. Target: Microsoft Store via MSIX.  
+**Runtime:** xAI Grok only. **Billing:** Microsoft Store subscription / IAP (not Stripe).
+
+Package Dart name / MSIX `identity_name` stay `chatai` / `ChatAI.Placeholder` for Store continuity.
 
 ## Prerequisites
 
@@ -46,7 +48,7 @@ flutter run -d windows \
 
 ## Free badge / i18n
 
-- Free: shows **Powered by ChatAI** badge; Pro hides it.
+- Free: shows **Powered by Orbita** badge; Pro hides it.
 - Locale stubs: English + Vietnamese (`lib/l10n`).
 
 ## MSIX / Store
@@ -55,6 +57,6 @@ flutter run -d windows \
 flutter pub run msix:create
 ```
 
-Fill `msix_config` in `pubspec.yaml` with Partner Center identity before certification.
+Fill `msix_config` in `pubspec.yaml` with Partner Center identity before certification (`display_name: Orbita`).
 Create the **Pro subscription add-on** in Partner Center (SKU must match `MS_STORE_PRO_PRODUCT_ID`).
 See root README for Store + Azure AD Collections notes.

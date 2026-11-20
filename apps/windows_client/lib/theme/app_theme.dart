@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// Chat AI Fluent / Windows 11 visual system — navy left rail, white chat, gray tools.
+/// Orbita Fluent / Windows 11 visual system — navy left rail, white chat, gray tools.
 class AppTheme {
-  static const brandName = 'Chat AI';
+  static const brandName = 'Orbita';
   static const brandSubtitle = 'Your AI assistant on Windows';
 
   // Brand / structure

@@ -30,7 +30,6 @@ export const config = {
   ai: {
     xaiApiKey: process.env.XAI_API_KEY ?? '',
     xaiBaseUrl: process.env.XAI_BASE_URL ?? 'https://api.x.ai/v1',
-    geminiApiKey: process.env.GOOGLE_GEMINI_API_KEY ?? '',
   },
 
   /**
@@ -74,7 +73,7 @@ export const config = {
 export type PlanTier = 'free' | 'pro';
 
 export function isAiConfigured(): boolean {
-  return Boolean(config.ai.xaiApiKey || config.ai.geminiApiKey);
+  return Boolean(config.ai.xaiApiKey);
 }
 
 /** True when Azure AD + Store product id are set for live Collections verify. */

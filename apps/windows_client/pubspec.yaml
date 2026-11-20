@@ -1,5 +1,5 @@
 name: chatai
-description: ChatAI — Windows desktop chat client (Microsoft Store / MSIX). Brand placeholder.
+description: Orbita — Windows desktop chat client (Microsoft Store / MSIX). Powered by xAI Grok.
 publish_to: "none"
 version: 0.1.0+1
 
@@ -30,8 +30,8 @@ flutter:
 
 # MSIX packaging for Microsoft Store (fill Partner Center identity before release).
 msix_config:
-  display_name: ChatAI
-  publisher_display_name: ChatAI Publisher Placeholder
+  display_name: Orbita
+  publisher_display_name: Orbita Publisher Placeholder
   identity_name: ChatAI.Placeholder
   msix_version: 0.1.0.0
   capabilities: internetClient

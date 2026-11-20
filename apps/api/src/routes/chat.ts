@@ -16,9 +16,7 @@ import {
 
 const streamBody = z.object({
   content: z.string().min(1).max(16_000),
-  model: z
-    .enum(['gemini-flash', 'gemini-pro', 'grok-fast', 'grok'])
-    .optional(),
+  model: z.enum(['grok-fast', 'grok']).optional(),
 });
 
 /**

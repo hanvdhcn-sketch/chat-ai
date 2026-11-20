@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'ChatAI';
+  String get appTitle => 'Orbita';
 
   @override
   String get newChat => 'New chat';
@@ -18,7 +18,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get send => 'Send';
 
   @override
-  String get messageHint => 'Message ChatAI…';
+  String get messageHint => 'Message Orbita…';
 
   @override
   String get signIn => 'Sign in';
@@ -35,7 +35,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get upgradePro => 'Upgrade to Pro';
 
   @override
-  String get poweredBy => 'Powered by ChatAI';
+  String get poweredBy => 'Powered by Orbita';
 
   @override
   String get freePlan => 'Free';
