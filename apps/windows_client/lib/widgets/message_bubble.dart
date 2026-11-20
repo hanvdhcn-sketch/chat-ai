@@ -9,7 +9,7 @@ class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
     required this.message,
-    this.modelLabel = 'GPT-6',
+    this.modelLabel = 'Grok',
   });
 
   final ChatMessage message;

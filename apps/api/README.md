@@ -1,6 +1,6 @@
-# ChatAI API (Fastify)
+# Orbita API (Fastify)
 
-BFF for the Windows client: auth verify, conversations/messages, SSE chat stream, usage/quota, **Microsoft Store billing**, AI gateway (Grok + Gemini).
+BFF for the Windows client: auth verify, conversations/messages, SSE chat stream, usage/quota, **Microsoft Store billing**, AI gateway (**xAI Grok only**).
 
 ## Run
 
@@ -48,12 +48,11 @@ Dev token: `Bearer stub:user_demo:free` or `stub:user_demo:pro`.
 
 ## AI gateway
 
-- Free → `gemini-flash` only
-- Pro → `grok` (default) or `gemini-pro` / `gemini-flash` / `grok-fast`
-- With keys: streams from xAI (`/chat/completions`) or Gemini (`streamGenerateContent?alt=sse`)
-- Missing key for the resolved model → deterministic stub stream (no crash)
-- Cross-vendor fallback once when primary HTTP fails (same cost band)
-- No Anthropic; Cursor is not a runtime
+- Free → `grok-fast` only (quota-limited)
+- Pro → `grok` (default) or `grok-fast`
+- With `XAI_API_KEY`: streams from xAI (`/chat/completions`)
+- Missing key → deterministic stub stream (no crash)
+- No Gemini / Anthropic / multi-model picker; Cursor is not a runtime
 
 ```bash
 npm run test -w @chatai/api   # mock-HTTP gateway + quota + Store entitlement tests

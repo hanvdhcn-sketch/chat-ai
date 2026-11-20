@@ -1,11 +1,11 @@
-# ChatAI
+# Orbita
 
 Windows desktop chat AI app (Microsoft Store) + Fastify API.  
-**AI runtime:** xAI Grok + Google Gemini only. No Anthropic/Claude. Cursor is for building, not end-user inference.
+**AI runtime:** xAI Grok only. Cursor is for building, not end-user inference.
 
 **Billing:** Microsoft Store IAP / Store-managed subscription (Free → Pro). **Not Stripe.**
 
-Brand name is a **placeholder** until Store listing / domain is finalized.
+Product display name: **Orbita**. Package identity (`ChatAI.Placeholder` / `@chatai/api`) stays stable for Store continuity.
 
 ## Monorepo layout
 
@@ -58,7 +58,7 @@ flutter pub get
 flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3001
 ```
 
-**Upgrade to Pro** in the sidebar calls Store purchase (WinRT `StoreContext` when wired) then `POST /v1/billing/store/verify`. Outside a Store package the client uses a **clear stub** and the API stub grant (dev only).
+**Upgrade to Pro** in the sidebar calls Store purchase (WinRT `StoreContext` when wired) then `POST /v1/billing/store/verify`. Outside a Store package the client uses a **clear stub** and the API stub grant (dev only). Pro unlocks full Grok API access and higher limits.
 
 ## Environment variables
 
@@ -71,9 +71,7 @@ flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3001
 | `DATABASE_URL` | API | Postgres |
 | `REDIS_URL` | API | Rate limit / usage cache |
 | `XAI_API_KEY` | API only | Grok inference (SSE via OpenAI-compatible chat completions) |
-| `GOOGLE_GEMINI_API_KEY` | API only | Gemini inference (`streamGenerateContent` SSE) |
 | `XAI_GROK_MODEL` / `XAI_GROK_FAST_MODEL` | API | Optional Grok model ids |
-| `GEMINI_FLASH_MODEL` / `GEMINI_PRO_MODEL` | API | Optional Gemini model ids |
 | `MS_STORE_TENANT_ID` | API only | Azure AD tenant for Collections API |
 | `MS_STORE_CLIENT_ID` | API only | Azure AD app client id |
 | `MS_STORE_CLIENT_SECRET` | API only | Azure AD app secret |
@@ -89,8 +87,8 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 | Price | $0 | $9.99/mo · 7-day trial (if Partner Center allows) |
 | Billing | — | Microsoft Store subscription add-on |
 | Messages/day | ~40 | ~400 |
-| Models | Gemini Flash | Grok (default) + Gemini |
-| Branding | “Powered by …” badge | Hidden |
+| Models | Grok Fast (quota-limited) | Grok (full API) |
+| Branding | “Powered by Orbita” badge | Hidden |
 | UI languages | VI + EN | VI + EN |
 
 ## MSIX / Microsoft Store (short)
@@ -98,7 +96,7 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 1. Partner Center: create app identity (publisher, package family name).
 2. Create **Subscription add-on** (e.g. `pro_monthly`) at **$9.99/mo**, optional 7-day trial; set `MS_STORE_PRO_PRODUCT_ID`.
 3. Enroll Azure AD app + Partner Center **service access** for Collections/Purchase API; set `MS_STORE_*` secrets on the API only.
-4. Fill `msix_config` in `apps/windows_client/pubspec.yaml`.
+4. Fill `msix_config` in `apps/windows_client/pubspec.yaml` (`display_name: Orbita`; keep `identity_name` stable).
 5. Build signed MSIX (`msix` package or CI); capability **InternetClient** only if possible.
 6. Privacy policy URL, age rating, bilingual Store listing.
 7. Wire Flutter method channel `chatai/store_billing` → WinRT `StoreContext` (purchase / license / User Store ID).
@@ -115,7 +113,7 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 
 ## Milestone
 
-**M1 (chat core):** real xAI Grok + Gemini gateway when keys are set; clear stub stream when missing; SSE persist; Free→Gemini Flash / Pro→Grok(+Gemini); message hard quota + token soft-cap + in-memory rate limit; Flutter stop/loading/error UX.
+**M1 (chat core):** real xAI Grok gateway when `XAI_API_KEY` is set; clear stub stream when missing; SSE persist; Free→Grok Fast / Pro→Grok; message hard quota + token soft-cap + in-memory rate limit; Flutter stop/loading/error UX.
 
 **M3 (billing):** MS Store products + verify entitlement stubs; Stripe checkout/portal/webhook return **410 Gone**. Live Collections verify when `MS_STORE_*` credentials are set.
 

@@ -25,7 +25,7 @@ async function main() {
   await app.register(billingRoutes);
 
   await app.listen({ port: config.port, host: '0.0.0.0' });
-  app.log.info(`ChatAI API listening on :${config.port}`);
+  app.log.info(`Orbita API listening on :${config.port}`);
 }
 
 main().catch((err) => {

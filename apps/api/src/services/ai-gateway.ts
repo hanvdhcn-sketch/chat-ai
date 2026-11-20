@@ -2,8 +2,6 @@ import { config } from '../config.js';
 import type { PlanTier } from '../config.js';
 import type { ModelId } from '../types/index.js';
 import {
-  fallbackModel,
-  isGeminiModel,
   isGrokModel,
   resolveModel,
   vendorModelId,
@@ -25,7 +23,7 @@ export interface StreamChunk {
   outputTokens?: number;
   error?: string;
   stub?: boolean;
-  vendor?: 'xai' | 'gemini' | 'stub';
+  vendor?: 'xai' | 'stub';
 }
 
 export type FetchLike = typeof fetch;
@@ -33,7 +31,6 @@ export type FetchLike = typeof fetch;
 export interface GatewayDeps {
   fetchFn?: FetchLike;
   xaiApiKey?: string;
-  geminiApiKey?: string;
   xaiBaseUrl?: string;
 }
 
@@ -48,7 +45,6 @@ function estimateTokens(text: string): number {
 function resolveKeys(deps: GatewayDeps) {
   return {
     xaiApiKey: deps.xaiApiKey ?? config.ai.xaiApiKey,
-    geminiApiKey: deps.geminiApiKey ?? config.ai.geminiApiKey,
     xaiBaseUrl: deps.xaiBaseUrl ?? config.ai.xaiBaseUrl,
   };
 }
@@ -59,8 +55,8 @@ async function* stubStream(
   abortSignal?: AbortSignal,
 ): AsyncGenerator<StreamChunk> {
   const stub =
-    `[ChatAI stub · ${model}] Keys not configured for this route. ` +
-    `Set XAI_API_KEY and/or GOOGLE_GEMINI_API_KEY on the server. ` +
+    `[Orbita stub · ${model}] XAI_API_KEY not configured. ` +
+    `Set XAI_API_KEY on the server for Grok. ` +
     `Echo: ${lastUser.slice(0, 200)}`;
   yield { type: 'meta', model, stub: true, vendor: 'stub' };
   for (const word of stub.split(' ')) {
@@ -81,23 +77,9 @@ async function* stubStream(
   };
 }
 
-function keyAvailableFor(
-  model: ModelId,
-  keys: ReturnType<typeof resolveKeys>,
-): boolean {
-  if (isGrokModel(model)) return Boolean(keys.xaiApiKey);
-  if (isGeminiModel(model)) return Boolean(keys.geminiApiKey);
-  return false;
-}
-
-function anyKey(keys: ReturnType<typeof resolveKeys>): boolean {
-  return Boolean(keys.xaiApiKey || keys.geminiApiKey);
-}
-
 /**
- * Stream completion from Grok (xAI) or Gemini.
- * Missing keys → clear stub stream (no crash).
- * Primary vendor failure → one fallback attempt on the other vendor when keyed.
+ * Stream completion from xAI Grok only.
+ * Missing key → clear stub stream (no crash).
  */
 export async function* streamCompletion(
   opts: {
@@ -110,34 +92,17 @@ export async function* streamCompletion(
 ): AsyncGenerator<StreamChunk> {
   const fetchFn = deps.fetchFn ?? fetch;
   const keys = resolveKeys(deps);
-  let model = resolveModel(opts.planTier, opts.model);
+  const model = resolveModel(opts.planTier, opts.model);
   const lastUser =
     [...opts.messages].reverse().find((m) => m.role === 'user')?.content ?? '';
 
-  if (!keyAvailableFor(model, keys)) {
-    const alt = fallbackModel(model);
-    if (alt && keyAvailableFor(alt, keys) && opts.planTier === 'pro') {
-      model = alt;
-    } else if (!anyKey(keys) || !keyAvailableFor(model, keys)) {
-      if (!keyAvailableFor(model, keys)) {
-        yield* stubStream(model, lastUser, opts.abortSignal);
-        return;
-      }
-    }
+  if (!keys.xaiApiKey || !isGrokModel(model)) {
+    yield* stubStream(model, lastUser, opts.abortSignal);
+    return;
   }
 
   try {
-    if (isGrokModel(model)) {
-      yield* streamXai({
-        model,
-        messages: opts.messages,
-        abortSignal: opts.abortSignal,
-        fetchFn,
-        keys,
-      });
-      return;
-    }
-    yield* streamGemini({
+    yield* streamXai({
       model,
       messages: opts.messages,
       abortSignal: opts.abortSignal,
@@ -148,34 +113,6 @@ export async function* streamCompletion(
     if (opts.abortSignal?.aborted) {
       yield { type: 'error', error: 'aborted', model };
       return;
-    }
-    const alt = fallbackModel(model);
-    if (alt && keyAvailableFor(alt, keys)) {
-      try {
-        if (isGrokModel(alt)) {
-          yield* streamXai({
-            model: alt,
-            messages: opts.messages,
-            abortSignal: opts.abortSignal,
-            fetchFn,
-            keys,
-          });
-          return;
-        }
-        yield* streamGemini({
-          model: alt,
-          messages: opts.messages,
-          abortSignal: opts.abortSignal,
-          fetchFn,
-          keys,
-        });
-        return;
-      } catch (fallbackErr) {
-        const message =
-          fallbackErr instanceof Error ? fallbackErr.message : 'vendor_failed';
-        yield { type: 'error', error: `fallback_failed: ${message}`, model: alt };
-        return;
-      }
     }
     const message = err instanceof Error ? err.message : 'vendor_failed';
     yield { type: 'error', error: message, model };
@@ -242,107 +179,17 @@ async function* streamXai(opts: {
     }
   }
 
-  if (!inputTokens) inputTokens = estimateTokens(
-    opts.messages.map((m) => m.content).join(' '),
-  );
+  if (!inputTokens) {
+    inputTokens = estimateTokens(
+      opts.messages.map((m) => m.content).join(' '),
+    );
+  }
   if (!outputTokens) outputTokens = estimateTokens(assembled);
 
   yield {
     type: 'done',
     model: opts.model,
     vendor: 'xai',
-    inputTokens,
-    outputTokens,
-  };
-}
-
-async function* streamGemini(opts: {
-  model: ModelId;
-  messages: ChatTurn[];
-  abortSignal?: AbortSignal;
-  fetchFn: FetchLike;
-  keys: ReturnType<typeof resolveKeys>;
-}): AsyncGenerator<StreamChunk> {
-  const apiModel = vendorModelId(opts.model);
-  const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/` +
-    `${apiModel}:streamGenerateContent?alt=sse&key=${encodeURIComponent(opts.keys.geminiApiKey)}`;
-
-  const systemBits = opts.messages
-    .filter((m) => m.role === 'system')
-    .map((m) => m.content)
-    .join('\n');
-  const contents = opts.messages
-    .filter((m) => m.role !== 'system')
-    .map((m) => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }));
-
-  const body: Record<string, unknown> = { contents };
-  if (systemBits) {
-    body.systemInstruction = { parts: [{ text: systemBits }] };
-  }
-
-  const res = await opts.fetchFn(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'text/event-stream',
-    },
-    body: JSON.stringify(body),
-    signal: opts.abortSignal,
-  });
-
-  if (!res.ok || !res.body) {
-    const text = res.body ? await res.text() : '';
-    throw new Error(`gemini_http_${res.status}: ${text.slice(0, 300)}`);
-  }
-
-  yield { type: 'meta', model: opts.model, vendor: 'gemini' };
-
-  let inputTokens = 0;
-  let outputTokens = 0;
-  let assembled = '';
-
-  for await (const line of readSseLines(res.body, opts.abortSignal)) {
-    let json: {
-      candidates?: Array<{
-        content?: { parts?: Array<{ text?: string }> };
-      }>;
-      usageMetadata?: {
-        promptTokenCount?: number;
-        candidatesTokenCount?: number;
-      };
-    };
-    try {
-      json = JSON.parse(line) as typeof json;
-    } catch {
-      continue;
-    }
-    const text = json.candidates?.[0]?.content?.parts
-      ?.map((p) => p.text ?? '')
-      .join('');
-    if (text) {
-      assembled += text;
-      yield { type: 'delta', text, model: opts.model, vendor: 'gemini' };
-    }
-    if (json.usageMetadata) {
-      inputTokens = json.usageMetadata.promptTokenCount ?? inputTokens;
-      outputTokens =
-        json.usageMetadata.candidatesTokenCount ?? outputTokens;
-    }
-  }
-
-  if (!inputTokens) {
-    inputTokens = estimateTokens(opts.messages.map((m) => m.content).join(' '));
-  }
-  if (!outputTokens) outputTokens = estimateTokens(assembled);
-
-  yield {
-    type: 'done',
-    model: opts.model,
-    vendor: 'gemini',
     inputTokens,
     outputTokens,
   };

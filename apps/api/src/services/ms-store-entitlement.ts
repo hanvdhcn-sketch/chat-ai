@@ -260,7 +260,7 @@ export function listStoreProductsPublic() {
         priceUsd: 9.99,
         billingPeriod: 'month',
         trialDays: 7,
-        title: 'ChatAI Pro',
+        title: 'Orbita Pro',
       },
     ],
     provider: 'microsoft_store' as const,

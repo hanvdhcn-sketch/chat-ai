@@ -9,7 +9,7 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
-  String get appTitle => 'ChatAI';
+  String get appTitle => 'Orbita';
 
   @override
   String get newChat => 'Hội thoại mới';
@@ -18,7 +18,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get send => 'Gửi';
 
   @override
-  String get messageHint => 'Nhắn ChatAI…';
+  String get messageHint => 'Nhắn Orbita…';
 
   @override
   String get signIn => 'Đăng nhập';
@@ -35,7 +35,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get upgradePro => 'Nâng cấp Pro';
 
   @override
-  String get poweredBy => 'Powered by ChatAI';
+  String get poweredBy => 'Powered by Orbita';
 
   @override
   String get freePlan => 'Miễn phí';

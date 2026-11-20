@@ -2,7 +2,7 @@
   "name": "chat-ai",
   "private": true,
   "version": "0.1.0",
-  "description": "ChatAI — Windows MS Store chat app (Flutter) + Fastify API (Grok + Gemini)",
+  "description": "Orbita — Windows MS Store chat app (Flutter) + Fastify API (xAI Grok)",
   "workspaces": [
     "apps/api"
   ],

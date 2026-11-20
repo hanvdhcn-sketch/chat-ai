@@ -63,13 +63,12 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _billingBusy = false;
   bool _showSample = true;
   String? _error;
-  String _selectedModelId = kUiModels.first.id;
   Locale _localeOverride = const Locale('en');
 
   Future<void> Function()? _cancelStream;
   StreamSubscription<Map<String, dynamic>>? _streamSub;
 
-  UiModel get _selectedModel => uiModelById(_selectedModelId);
+  UiModel get _selectedModel => kGrokModel;
 
   List<ChatMessage> get _displayMessages {
     if (_messages.isNotEmpty) return _messages;
@@ -161,25 +160,25 @@ class _ChatScreenState extends State<ChatScreen> {
       Conversation(
         id: 'demo_1',
         title: 'Kế hoạch học tập SysAdmin',
-        modelDefault: 'gemini-flash',
+        modelDefault: 'grok',
         updatedAt: now.subtract(const Duration(minutes: 2)).toIso8601String(),
       ),
       Conversation(
         id: 'demo_2',
         title: 'Refactor Flutter Windows UI',
-        modelDefault: 'gemini-flash',
+        modelDefault: 'grok',
         updatedAt: now.subtract(const Duration(hours: 1)).toIso8601String(),
       ),
       Conversation(
         id: 'demo_3',
         title: 'Microsoft Store IAP checklist',
-        modelDefault: 'gemini-flash',
+        modelDefault: 'grok',
         updatedAt: now.subtract(const Duration(hours: 5)).toIso8601String(),
       ),
       Conversation(
         id: 'demo_4',
         title: 'Viết email xin nghỉ phép',
-        modelDefault: 'gemini-flash',
+        modelDefault: 'grok',
         updatedAt: now.subtract(const Duration(days: 1)).toIso8601String(),
       ),
     ];
@@ -293,7 +292,7 @@ class _ChatScreenState extends State<ChatScreen> {
               role: 'assistant',
               content:
                   'API chưa kết nối. UI đã sẵn sàng — chạy API local rồi gửi lại '
-                  '(runtime: Grok/Gemini). Model UI: ${_selectedModel.label}.',
+                  '(runtime: xAI Grok).',
               status: 'complete',
               model: _selectedModel.runtimeHint,
             ),
@@ -487,13 +486,21 @@ class _ChatScreenState extends State<ChatScreen> {
             body: Row(
               children: [
                 LeftNav(
-                  selectedModelId: _selectedModelId,
-                  onSelectModel: (id) => setState(() => _selectedModelId = id),
                   onNewChat: _newChat,
                   onUpgrade: _upgradePro,
                   billingBusy: _billingBusy,
                   showUpgrade: showUpgrade,
                   onNavTap: (label) {
+                    if (label == 'About') {
+                      showAboutDialog(
+                        context: context,
+                        applicationName: AppTheme.brandName,
+                        applicationVersion: '0.1.0',
+                        applicationLegalese:
+                            'Powered by xAI Grok. Microsoft Store IAP for Pro.',
+                      );
+                      return;
+                    }
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('$label — coming soon'),
@@ -533,8 +540,6 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           _ChatHeader(
             model: _selectedModel,
-            models: kUiModels,
-            onSelectModel: (id) => setState(() => _selectedModelId = id),
             streaming: _streaming,
             usage: _usage,
             onToggleLocale: () {
@@ -626,8 +631,6 @@ class _ChatScreenState extends State<ChatScreen> {
 class _ChatHeader extends StatelessWidget {
   const _ChatHeader({
     required this.model,
-    required this.models,
-    required this.onSelectModel,
     required this.streaming,
     required this.usage,
     required this.onToggleLocale,
@@ -637,8 +640,6 @@ class _ChatHeader extends StatelessWidget {
   });
 
   final UiModel model;
-  final List<UiModel> models;
-  final ValueChanged<String> onSelectModel;
   final bool streaming;
   final UsageSnapshot? usage;
   final VoidCallback onToggleLocale;
@@ -652,52 +653,26 @@ class _ChatHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 14, 16, 8),
       child: Row(
         children: [
-          PopupMenuButton<String>(
-            onSelected: onSelectModel,
-            offset: const Offset(0, 40),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.mist,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.border),
             ),
-            itemBuilder: (_) => [
-              for (final m in models)
-                PopupMenuItem(
-                  value: m.id,
-                  child: Row(
-                    children: [
-                      Icon(m.icon, size: 16, color: m.color),
-                      const SizedBox(width: 10),
-                      Text(m.label),
-                    ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(model.icon, size: 16, color: model.color),
+                const SizedBox(width: 8),
+                Text(
+                  model.label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
                   ),
                 ),
-            ],
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppTheme.mist,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppTheme.border),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(model.icon, size: 16, color: model.color),
-                  const SizedBox(width: 8),
-                  Text(
-                    model.label,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.5,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 18,
-                    color: AppTheme.inkMuted,
-                  ),
-                ],
-              ),
+              ],
             ),
           ),
           const Spacer(),

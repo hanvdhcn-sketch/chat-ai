@@ -1,9 +1,9 @@
 {
   "@@locale": "en",
-  "appTitle": "ChatAI",
+  "appTitle": "Orbita",
   "newChat": "New chat",
   "send": "Send",
-  "messageHint": "Message ChatAI…",
+  "messageHint": "Message Orbita…",
   "signIn": "Sign in",
   "signOut": "Sign out",
   "usageRemaining": "{remaining} messages left today",
@@ -13,7 +13,7 @@
     }
   },
   "upgradePro": "Upgrade to Pro",
-  "poweredBy": "Powered by ChatAI",
+  "poweredBy": "Powered by Orbita",
   "freePlan": "Free",
   "proPlan": "Pro",
   "conversations": "Conversations",

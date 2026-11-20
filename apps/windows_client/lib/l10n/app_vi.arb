@@ -1,9 +1,9 @@
 {
   "@@locale": "vi",
-  "appTitle": "ChatAI",
+  "appTitle": "Orbita",
   "newChat": "Hội thoại mới",
   "send": "Gửi",
-  "messageHint": "Nhắn ChatAI…",
+  "messageHint": "Nhắn Orbita…",
   "signIn": "Đăng nhập",
   "signOut": "Đăng xuất",
   "usageRemaining": "Còn {remaining} tin nhắn hôm nay",
@@ -13,7 +13,7 @@
     }
   },
   "upgradePro": "Nâng cấp Pro",
-  "poweredBy": "Powered by ChatAI",
+  "poweredBy": "Powered by Orbita",
   "freePlan": "Miễn phí",
   "proPlan": "Pro",
   "conversations": "Hội thoại",

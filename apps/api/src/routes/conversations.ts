@@ -13,9 +13,7 @@ import type { ModelId } from '../types/index.js';
 
 const createBody = z.object({
   title: z.string().min(1).max(200).optional(),
-  modelDefault: z
-    .enum(['gemini-flash', 'gemini-pro', 'grok-fast', 'grok'])
-    .optional(),
+  modelDefault: z.enum(['grok-fast', 'grok']).optional(),
 });
 
 export async function conversationRoutes(app: FastifyInstance): Promise<void> {
@@ -41,7 +39,7 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
       const now = new Date().toISOString();
       const modelDefault: ModelId =
         user.planTier === 'free'
-          ? 'gemini-flash'
+          ? 'grok-fast'
           : (parsed.data.modelDefault ?? 'grok');
 
       const conversation = {

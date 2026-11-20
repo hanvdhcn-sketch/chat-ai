@@ -15,7 +15,7 @@ export async function usageRoutes(app: FastifyInstance): Promise<void> {
           : config.quotas.freeRateLimitPerMin,
       branding: {
         showPoweredBy: user.planTier === 'free',
-        label: 'Powered by ChatAI',
+        label: 'Powered by Orbita',
       },
     };
   });

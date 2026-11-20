@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// UI-facing model labels. Runtime still routes to Grok/Gemini via API.
+/// Single runtime model surface — xAI Grok only.
 class UiModel {
   const UiModel({
     required this.id,
@@ -12,42 +12,22 @@ class UiModel {
 
   final String id;
   final String label;
-  /// Hint only — never call Anthropic; API picks Grok/Gemini.
+  /// Always grok / grok-fast — API ignores other vendors.
   final String runtimeHint;
   final IconData icon;
   final Color color;
 }
 
-const kUiModels = <UiModel>[
-  UiModel(
-    id: 'gpt-6',
-    label: 'GPT-6',
-    runtimeHint: 'grok',
-    icon: Icons.auto_awesome,
-    color: Color(0xFF10A37F),
-  ),
-  UiModel(
-    id: 'claude-4',
-    label: 'Claude 4',
-    runtimeHint: 'gemini',
-    icon: Icons.psychology_alt_outlined,
-    color: Color(0xFFD97706),
-  ),
-  UiModel(
-    id: 'gemini-2.5',
-    label: 'Gemini 2.5',
-    runtimeHint: 'gemini',
-    icon: Icons.diamond_outlined,
-    color: Color(0xFF4285F4),
-  ),
-  UiModel(
-    id: 'copilot',
-    label: 'Copilot',
-    runtimeHint: 'grok',
-    icon: Icons.flight_outlined,
-    color: Color(0xFF0078D4),
-  ),
-];
+const kGrokModel = UiModel(
+  id: 'grok',
+  label: 'Grok',
+  runtimeHint: 'grok',
+  icon: Icons.auto_awesome,
+  color: Color(0xFF1D9BF0),
+);
+
+/// Kept as a one-item list for call sites that still iterate models.
+const kUiModels = <UiModel>[kGrokModel];
 
 UiModel uiModelById(String id) =>
-    kUiModels.firstWhere((m) => m.id == id, orElse: () => kUiModels.first);
+    kUiModels.firstWhere((m) => m.id == id, orElse: () => kGrokModel);
