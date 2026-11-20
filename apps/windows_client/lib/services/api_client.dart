@@ -128,6 +128,7 @@ class ApiClient {
     required String conversationId,
     required String content,
     String? model,
+    List<Map<String, dynamic>>? attachments,
   }) {
     final controller = StreamController<Map<String, dynamic>>();
     http.Client? streamClient;
@@ -154,6 +155,8 @@ class ApiClient {
         request.body = jsonEncode({
           'content': content,
           if (model != null) 'model': model,
+          if (attachments != null && attachments.isNotEmpty)
+            'attachments': attachments,
         });
 
         final response = await streamClient!.send(request);

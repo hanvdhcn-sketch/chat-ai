@@ -1,11 +1,16 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/attachment.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/attachment_reader.dart';
 import '../services/auth_service.dart';
 import '../services/store_billing.dart';
 import '../theme/app_theme.dart';
@@ -62,8 +67,10 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _streaming = false;
   bool _billingBusy = false;
   bool _showSample = true;
+  bool _dragging = false;
   String? _error;
   Locale _localeOverride = const Locale('en');
+  final List<PendingAttachment> _attachments = [];
 
   Future<void> Function()? _cancelStream;
   StreamSubscription<Map<String, dynamic>>? _streamSub;
@@ -271,9 +278,116 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  String _composeDisplayContent(
+    String text,
+    List<PendingAttachment> attachments,
+  ) {
+    final parts = <String>[];
+    if (text.trim().isNotEmpty) parts.add(text.trim());
+    for (final a in attachments) {
+      if (a.kind == AttachmentKind.image) {
+        parts.add('[Attached image: ${a.name}]');
+        if (a.notice != null) parts.add('(${a.notice})');
+      } else if (a.kind == AttachmentKind.text && a.text != null) {
+        parts.add('--- Attached file: ${a.name} ---');
+        if (a.notice != null) parts.add('(${a.notice})');
+        parts.add(a.text!);
+        parts.add('--- End of ${a.name} ---');
+      } else if (a.kind == AttachmentKind.unsupported) {
+        parts.add(
+          '[Unsupported: ${a.name}${a.notice != null ? ' — ${a.notice}' : ''}]',
+        );
+      }
+    }
+    return parts.join('\n\n').trim();
+  }
+
+  Future<void> _addPaths(Iterable<String> paths) async {
+    final remaining =
+        AttachmentReader.maxAttachments - _attachments.length;
+    if (remaining <= 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Max ${AttachmentReader.maxAttachments} attachments per message',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final toLoad = paths.take(remaining).toList();
+    final loaded = <PendingAttachment>[];
+    for (final path in toLoad) {
+      try {
+        loaded.add(await AttachmentReader.fromPath(path));
+      } catch (e) {
+        loaded.add(
+          PendingAttachment(
+            id: 'err_${DateTime.now().microsecondsSinceEpoch}',
+            path: path,
+            name: path.split(RegExp(r'[\\/]')).last,
+            kind: AttachmentKind.unsupported,
+            mimeType: 'application/octet-stream',
+            notice: 'Could not read file.',
+          ),
+        );
+      }
+    }
+    if (!mounted) return;
+    setState(() => _attachments.addAll(loaded));
+
+    final unsupported =
+        loaded.where((a) => a.kind == AttachmentKind.unsupported).toList();
+    if (unsupported.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            unsupported.length == 1
+                ? unsupported.first.notice ??
+                    '${unsupported.first.name} is unsupported'
+                : '${unsupported.length} files are unsupported',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<String> _writeTempBytes(String name, List<int> bytes) async {
+    final safe = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+    final dir = Directory.systemTemp;
+    final file = File(
+      '${dir.path}${Platform.pathSeparator}orbita_drop_${DateTime.now().microsecondsSinceEpoch}_$safe',
+    );
+    await file.writeAsBytes(bytes, flush: true);
+    return file.path;
+  }
+
+  Future<void> _pickAttachments() async {
+    if (_streaming) return;
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.any,
+    );
+    if (result == null) return;
+    final paths = result.files
+        .map((f) => f.path)
+        .whereType<String>()
+        .where((p) => p.isNotEmpty);
+    await _addPaths(paths);
+  }
+
   Future<void> _send() async {
     final text = _input.text.trim();
-    if (text.isEmpty || _streaming) return;
+    final pending = List<PendingAttachment>.from(_attachments);
+    final sendable = pending.where((a) => a.isSendable).toList();
+    if (_streaming) return;
+    if (text.isEmpty && sendable.isEmpty) return;
+
+    final displayContent = _composeDisplayContent(text, pending);
+    final attachmentPayload =
+        sendable.map((a) => a.toApiJson()).toList(growable: false);
 
     var conversation = _active;
     if (conversation == null || conversation.id.startsWith('demo_')) {
@@ -286,7 +400,11 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _showSample = false;
           _messages = [
-            ChatMessage(id: 'local_user', role: 'user', content: text),
+            ChatMessage(
+              id: 'local_user',
+              role: 'user',
+              content: displayContent,
+            ),
             ChatMessage(
               id: 'local_assistant',
               role: 'assistant',
@@ -298,12 +416,18 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ];
           _input.clear();
+          _attachments.clear();
           final idx =
               _conversations.indexWhere((c) => c.id == localConvo.id);
           if (idx >= 0) {
+            final titleSrc = text.isNotEmpty
+                ? text
+                : (pending.isNotEmpty ? pending.first.name : 'Chat');
             _conversations[idx] = Conversation(
               id: localConvo.id,
-              title: text.length > 42 ? '${text.substring(0, 42)}…' : text,
+              title: titleSrc.length > 42
+                  ? '${titleSrc.substring(0, 42)}…'
+                  : titleSrc,
               modelDefault: localConvo.modelDefault,
               updatedAt: DateTime.now().toUtc().toIso8601String(),
             );
@@ -321,7 +445,11 @@ class _ChatScreenState extends State<ChatScreen> {
       _error = null;
       _messages = [
         ..._messages,
-        ChatMessage(id: 'local_user', role: 'user', content: text),
+        ChatMessage(
+          id: 'local_user',
+          role: 'user',
+          content: displayContent,
+        ),
         ChatMessage(
           id: 'local_assistant',
           role: 'assistant',
@@ -330,12 +458,14 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ];
       _input.clear();
+      _attachments.clear();
     });
     _scrollToEnd();
 
     final stream = _api.streamMessage(
       conversationId: conversation.id,
       content: text,
+      attachments: attachmentPayload,
     );
     _cancelStream = stream.cancel;
 
@@ -352,7 +482,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 _messages[_messages.length - 2] = ChatMessage(
                   id: uid,
                   role: 'user',
-                  content: text,
+                  content: displayContent,
                 );
               }
               if (aid != null && _messages.isNotEmpty) {
@@ -534,94 +664,176 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildCenter(AuthService auth) {
     final msgs = _displayMessages;
-    return ColoredBox(
-      color: AppTheme.surface,
-      child: Column(
-        children: [
-          _ChatHeader(
-            model: _selectedModel,
-            streaming: _streaming,
-            usage: _usage,
-            onToggleLocale: () {
-              setState(() {
-                _localeOverride = _localeOverride.languageCode == 'en'
-                    ? const Locale('vi')
-                    : const Locale('en');
-              });
-            },
-            localeCode: _localeOverride.languageCode,
-            onRestore: () async {
+    return DropTarget(
+      acceptedKinds: const {DropItemKind.file},
+      onEnter: (_) => setState(() => _dragging = true),
+      onLeave: () => setState(() => _dragging = false),
+      onDrop: (detail) async {
+        setState(() => _dragging = false);
+        if (_streaming) return;
+        final paths = <String>[];
+        for (final item in detail.items) {
+          if (item is DropFileItem) {
+            final path = item.localPath;
+            if (path != null && path.isNotEmpty) {
+              paths.add(path);
+            } else {
+              // Provider-backed file without a path — write to temp then read.
               try {
-                final result = await _storeBilling.restorePurchases();
-                await auth.refreshMe();
-                await _bootstrap();
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      result.message ??
-                          '${result.status} → ${result.planTier ?? 'free'}',
-                    ),
-                  ),
-                );
-              } catch (e) {
-                setState(() => _error = _friendlyError(e));
-              }
-            },
-            onSwitchTier: (tier) async {
-              await auth.switchStubTier(tier);
-              await _bootstrap();
-            },
-          ),
-          if (_error != null)
-            Material(
-              color: const Color(0xFFFEE2E2),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(color: Color(0xFF991B1B)),
+                final bytes = await item.file.readAsBytes();
+                final tmp = await _writeTempBytes(item.name, bytes);
+                paths.add(tmp);
+              } catch (_) {/* skip unreadable */}
+            }
+          }
+        }
+        await _addPaths(paths);
+      },
+      child: Stack(
+        children: [
+          ColoredBox(
+            color: AppTheme.surface,
+            child: Column(
+              children: [
+                _ChatHeader(
+                  model: _selectedModel,
+                  streaming: _streaming,
+                  usage: _usage,
+                  onToggleLocale: () {
+                    setState(() {
+                      _localeOverride = _localeOverride.languageCode == 'en'
+                          ? const Locale('vi')
+                          : const Locale('en');
+                    });
+                  },
+                  localeCode: _localeOverride.languageCode,
+                  onRestore: () async {
+                    try {
+                      final result = await _storeBilling.restorePurchases();
+                      await auth.refreshMe();
+                      await _bootstrap();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            result.message ??
+                                '${result.status} → ${result.planTier ?? 'free'}',
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      setState(() => _error = _friendlyError(e));
+                    }
+                  },
+                  onSwitchTier: (tier) async {
+                    await auth.switchStubTier(tier);
+                    await _bootstrap();
+                  },
+                ),
+                if (_error != null)
+                  Material(
+                    color: const Color(0xFFFEE2E2),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _error!,
+                              style: const TextStyle(color: Color(0xFF991B1B)),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Dismiss',
+                            onPressed: () => setState(() => _error = null),
+                            icon: const Icon(Icons.close, size: 18),
+                          ),
+                        ],
                       ),
                     ),
-                    IconButton(
-                      tooltip: 'Dismiss',
-                      onPressed: () => setState(() => _error = null),
-                      icon: const Icon(Icons.close, size: 18),
+                  ),
+                Expanded(
+                  child: _busy && msgs.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                          controller: _scroll,
+                          padding: const EdgeInsets.fromLTRB(28, 8, 28, 16),
+                          itemCount: msgs.length,
+                          itemBuilder: (context, i) => MessageBubble(
+                            message: msgs[i],
+                            modelLabel: _selectedModel.label,
+                          ),
+                        ),
+                ),
+                ComposerBar(
+                  controller: _input,
+                  streaming: _streaming,
+                  onSend: _send,
+                  onStop: _stop,
+                  attachments: _attachments,
+                  onRemoveAttachment: (id) {
+                    setState(
+                      () => _attachments.removeWhere((a) => a.id == id),
+                    );
+                  },
+                  onAttach: _pickAttachments,
+                ),
+              ],
+            ),
+          ),
+          if (_dragging)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppTheme.accent.withValues(alpha: 0.10),
+                    border: Border.all(
+                      color: AppTheme.accent.withValues(alpha: 0.55),
+                      width: 2,
                     ),
-                  ],
+                  ),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 18,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface.withValues(alpha: 0.95),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppTheme.border),
+                      ),
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.file_download_outlined,
+                            size: 36,
+                            color: AppTheme.accent,
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            'Drop files to attach',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Images → Grok vision · Text files → chat context',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.inkMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          Expanded(
-            child: _busy && msgs.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    controller: _scroll,
-                    padding: const EdgeInsets.fromLTRB(28, 8, 28, 16),
-                    itemCount: msgs.length,
-                    itemBuilder: (context, i) => MessageBubble(
-                      message: msgs[i],
-                      modelLabel: _selectedModel.label,
-                    ),
-                  ),
-          ),
-          ComposerBar(
-            controller: _input,
-            streaming: _streaming,
-            onSend: _send,
-            onStop: _stop,
-            onAttach: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Attachments — coming soon'),
-                  duration: Duration(seconds: 1),
-                ),
-              );
-            },
-          ),
         ],
       ),
     );

@@ -6,6 +6,12 @@ import { checkQuota } from '../services/quota.js';
 import { checkRateLimit } from '../services/rate-limit.js';
 import { streamCompletion } from '../services/ai-gateway.js';
 import {
+  buildPersistedUserContent,
+  buildUserTurnContent,
+  sanitizeAttachments,
+  toGatewayMessages,
+} from '../services/attachments.js';
+import {
   appendMessage,
   getConversation,
   listMessages,
@@ -14,10 +20,33 @@ import {
   incrementUsage,
 } from '../services/store.js';
 
-const streamBody = z.object({
-  content: z.string().min(1).max(16_000),
-  model: z.enum(['grok-fast', 'grok']).optional(),
+const attachmentSchema = z.object({
+  name: z.string().min(1).max(256),
+  mimeType: z.string().min(1).max(128),
+  kind: z.enum(['image', 'text', 'unsupported']),
+  text: z.string().max(100_000).optional(),
+  dataBase64: z.string().max(12_000_000).optional(),
+  notice: z.string().max(500).optional(),
 });
+
+const streamBody = z
+  .object({
+    content: z.string().max(16_000).default(''),
+    model: z.enum(['grok-fast', 'grok']).optional(),
+    attachments: z.array(attachmentSchema).max(5).optional(),
+  })
+  .superRefine((val, ctx) => {
+    const hasText = val.content.trim().length > 0;
+    const atts = sanitizeAttachments(val.attachments);
+    const hasUseful = atts.some((a) => a.kind === 'image' || a.kind === 'text');
+    if (!hasText && !hasUseful) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'empty_message',
+        path: ['content'],
+      });
+    }
+  });
 
 /**
  * Streaming chat: SSE text/event-stream.
@@ -58,12 +87,22 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
+      const attachments = sanitizeAttachments(parsed.data.attachments);
+      const persistedContent = buildPersistedUserContent(
+        parsed.data.content,
+        attachments,
+      );
+      const userTurnContent = buildUserTurnContent(
+        parsed.data.content,
+        attachments,
+      );
+
       const now = new Date().toISOString();
       const userMsg = {
         id: newId('msg'),
         conversationId: conversation.id,
         role: 'user' as const,
-        content: parsed.data.content,
+        content: persistedContent,
         status: 'complete' as const,
         createdAt: now,
       };
@@ -108,6 +147,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
           role: m.role as 'user' | 'assistant' | 'system',
           content: m.content,
         }));
+      const gatewayMessages = toGatewayMessages(history, userTurnContent);
 
       let assembled = '';
       const started = Date.now();
@@ -131,8 +171,8 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
           latencyMs: Date.now() - started,
         });
         conversation.updatedAt = new Date().toISOString();
-        if (conversation.title === 'New chat' && parsed.data.content) {
-          conversation.title = parsed.data.content.slice(0, 60);
+        if (conversation.title === 'New chat' && persistedContent) {
+          conversation.title = persistedContent.slice(0, 60);
         }
         saveConversation(conversation);
       };
@@ -141,7 +181,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
         for await (const chunk of streamCompletion({
           planTier: user.planTier,
           model: parsed.data.model,
-          messages: history,
+          messages: gatewayMessages,
           abortSignal: abort.signal,
         })) {
           if (abort.signal.aborted) break;
