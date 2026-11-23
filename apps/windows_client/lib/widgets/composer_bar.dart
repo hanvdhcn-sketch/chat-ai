@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/attachment.dart';
+import '../services/dictation_service.dart';
 import '../theme/app_theme.dart';
 
 class ComposerBar extends StatefulWidget {
@@ -15,6 +16,8 @@ class ComposerBar extends StatefulWidget {
     this.onAttach,
     this.attachments = const [],
     this.onRemoveAttachment,
+    this.localeCode = 'en',
+    this.onDictationError,
   });
 
   final TextEditingController controller;
@@ -26,23 +29,45 @@ class ComposerBar extends StatefulWidget {
   final List<PendingAttachment> attachments;
   final ValueChanged<String>? onRemoveAttachment;
 
+  /// BCP-47 language hint for STT (`en`, `vi`).
+  final String localeCode;
+
+  /// Optional host callback for mic / STT failures (SnackBar, etc.).
+  final ValueChanged<String>? onDictationError;
+
   @override
   State<ComposerBar> createState() => _ComposerBarState();
 }
 
 class _ComposerBarState extends State<ComposerBar> {
   late final FocusNode _focusNode;
+  late final DictationService _dictation;
+  bool _dictating = false;
+
+  /// Text present before the current dictation session (partials replace after this).
+  String _dictationPrefix = '';
 
   @override
   void initState() {
     super.initState();
     _focusNode = FocusNode(onKeyEvent: _onComposerKeyEvent);
+    _dictation = DictationService();
     widget.controller.addListener(_onTextChanged);
+  }
+
+  @override
+  void didUpdateWidget(ComposerBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // After a reply finishes, put the caret back in the composer.
+    if (oldWidget.streaming && !widget.streaming) {
+      _requestComposerFocus();
+    }
   }
 
   @override
   void dispose() {
     widget.controller.removeListener(_onTextChanged);
+    _dictation.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -51,11 +76,27 @@ class _ComposerBarState extends State<ComposerBar> {
     if (mounted) setState(() {});
   }
 
+  void _requestComposerFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_focusNode.hasFocus) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
   bool get _canSend {
     if (widget.streaming) return false;
     final hasText = widget.controller.text.trim().isNotEmpty;
     final hasReady = widget.attachments.any((a) => a.isSendable);
     return hasText || hasReady;
+  }
+
+  void _sendAndKeepFocus() {
+    if (!_canSend) return;
+    widget.onSend();
+    // Field stays enabled while streaming so focus can stick / return.
+    _requestComposerFocus();
   }
 
   KeyEventResult _onComposerKeyEvent(FocusNode node, KeyEvent event) {
@@ -81,9 +122,80 @@ class _ComposerBarState extends State<ComposerBar> {
 
     // Enter sends (same as Send button); skip empty / no attachments.
     if (_canSend) {
-      widget.onSend();
+      _sendAndKeepFocus();
     }
     return KeyEventResult.handled;
+  }
+
+  Future<void> _toggleDictation() async {
+    if (widget.streaming) return;
+    if (_dictating) {
+      await _stopDictation();
+      return;
+    }
+
+    final existing = widget.controller.text;
+    _dictationPrefix = existing.trimRight();
+    if (_dictationPrefix.isNotEmpty && !_dictationPrefix.endsWith(' ')) {
+      // Keep a space between typed text and the spoken segment.
+      _dictationPrefix = '$_dictationPrefix ';
+    }
+
+    setState(() => _dictating = true);
+    _requestComposerFocus();
+
+    try {
+      await _dictation.start(
+        localeHint: widget.localeCode,
+        onText: (text, {required isFinal}) {
+          if (!mounted) return;
+          final next = '$_dictationPrefix${text.trim()}';
+          widget.controller.value = TextEditingValue(
+            text: next,
+            selection: TextSelection.collapsed(offset: next.length),
+          );
+          if (isFinal) {
+            // Commit this utterance; further finals append after it.
+            _dictationPrefix = next.trimRight();
+            if (_dictationPrefix.isNotEmpty) {
+              _dictationPrefix = '$_dictationPrefix ';
+            }
+          }
+        },
+        onError: (msg) {
+          if (!mounted) return;
+          widget.onDictationError?.call(msg);
+          _stopDictation();
+        },
+        onStatus: (status) {
+          // speech_to_text reports "done" / "notListening" when the OS ends a pass.
+          if (status == 'done' || status == 'notListening') {
+            if (_dictating && mounted) {
+              // Keep UI recording until the user taps stop; plugin may auto-stop.
+              // If plugin stopped listening, flip UI off.
+              if (!_dictation.isListening) {
+                setState(() => _dictating = false);
+              }
+            }
+          }
+        },
+      );
+      if (mounted && !_dictation.isListening) {
+        setState(() => _dictating = false);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      widget.onDictationError?.call(e.toString());
+      setState(() => _dictating = false);
+    }
+  }
+
+  Future<void> _stopDictation() async {
+    await _dictation.stop();
+    if (mounted) {
+      setState(() => _dictating = false);
+      _requestComposerFocus();
+    }
   }
 
   @override
@@ -104,7 +216,11 @@ class _ComposerBarState extends State<ComposerBar> {
             decoration: BoxDecoration(
               color: AppTheme.surface,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: AppTheme.border),
+              border: Border.all(
+                color: _dictating
+                    ? const Color(0xFFEF4444).withValues(alpha: 0.55)
+                    : AppTheme.border,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.04),
@@ -124,18 +240,31 @@ class _ComposerBarState extends State<ComposerBar> {
                     color: AppTheme.inkMuted.withValues(alpha: 0.9),
                   ),
                 ),
+                IconButton(
+                  tooltip: _dictating ? 'Stop dictation' : 'Voice dictation',
+                  onPressed: widget.streaming ? null : _toggleDictation,
+                  icon: Icon(
+                    _dictating ? Icons.stop_circle_outlined : Icons.mic_none_rounded,
+                    color: _dictating
+                        ? const Color(0xFFEF4444)
+                        : AppTheme.inkMuted.withValues(alpha: 0.9),
+                  ),
+                ),
                 Expanded(
                   child: TextField(
                     controller: widget.controller,
                     focusNode: _focusNode,
                     minLines: 1,
                     maxLines: 5,
-                    enabled: !widget.streaming,
+                    // Keep enabled during streaming so focus survives Enter/send
+                    // and the user can draft the next message while Grok replies.
+                    enabled: true,
+                    readOnly: false,
                     keyboardType: TextInputType.multiline,
                     textInputAction: TextInputAction.newline,
                     style: const TextStyle(fontSize: 14.5, height: 1.4),
                     decoration: InputDecoration(
-                      hintText: widget.hint,
+                      hintText: _dictating ? 'Listening…' : widget.hint,
                       filled: false,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -158,7 +287,7 @@ class _ComposerBarState extends State<ComposerBar> {
                   )
                 else
                   IconButton.filled(
-                    onPressed: _canSend ? widget.onSend : null,
+                    onPressed: _canSend ? _sendAndKeepFocus : null,
                     style: IconButton.styleFrom(
                       backgroundColor: AppTheme.accent,
                       foregroundColor: Colors.white,
