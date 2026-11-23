@@ -6,6 +6,7 @@ import type {
 } from '../types/index.js';
 import type { PlanTier } from '../config.js';
 import { config } from '../config.js';
+import { isProMonthlyImageSoftCapActive } from './quota-context.js';
 
 /**
  * In-memory store for M0/M1. Replace with Postgres (Supabase/Neon) + Redis.
@@ -21,6 +22,49 @@ function dayStartIso(): string {
   const d = new Date();
   d.setUTCHours(0, 0, 0, 0);
   return d.toISOString();
+}
+
+export function monthStartIso(from: Date = new Date()): string {
+  return new Date(
+    Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), 1),
+  ).toISOString();
+}
+
+function resolveMonthCounters(
+  prev: UsageSnapshot | undefined,
+  monthStart: string,
+): { monthImagesCount: number; monthWindowStart: string } {
+  if (!prev) {
+    return { monthImagesCount: 0, monthWindowStart: monthStart };
+  }
+  const prevMonth = prev.monthWindowStart ?? monthStartIso(new Date(prev.windowStart));
+  if (prevMonth === monthStart) {
+    return {
+      monthImagesCount: prev.monthImagesCount ?? 0,
+      monthWindowStart: prevMonth,
+    };
+  }
+  return { monthImagesCount: 0, monthWindowStart: monthStart };
+}
+
+function applyPlanLimits(snap: UsageSnapshot, planTier: PlanTier): void {
+  snap.planTier = planTier;
+  snap.messagesLimit =
+    planTier === 'pro'
+      ? config.quotas.proMessagesPerDay
+      : config.quotas.freeMessagesPerDay;
+  const softCap = isProMonthlyImageSoftCapActive(snap, planTier);
+  snap.imagesLimit =
+    planTier === 'pro' && !softCap
+      ? config.quotas.proImagesPerDay
+      : config.quotas.freeImagesPerDay;
+  if (snap.imagesCount === undefined) snap.imagesCount = 0;
+  if (snap.monthImagesCount === undefined) snap.monthImagesCount = 0;
+  if (!snap.monthWindowStart) snap.monthWindowStart = monthStartIso();
+  snap.tokenSoftCap =
+    planTier === 'pro'
+      ? config.quotas.proTokenSoftCap
+      : config.quotas.freeTokenSoftCap;
 }
 
 export function listConversations(userId: string): Conversation[] {
@@ -70,46 +114,32 @@ export function getOrCreateUsage(
   planTier: PlanTier,
 ): UsageSnapshot {
   const windowStart = dayStartIso();
+  const monthStart = monthStartIso();
   let snap = usageByUser.get(userId);
   if (!snap || snap.windowStart !== windowStart) {
+    const month = resolveMonthCounters(snap, monthStart);
     snap = {
       userId,
       window: 'day',
       windowStart,
       messagesCount: 0,
-      messagesLimit:
-        planTier === 'pro'
-          ? config.quotas.proMessagesPerDay
-          : config.quotas.freeMessagesPerDay,
+      messagesLimit: 0,
       imagesCount: 0,
-      imagesLimit:
-        planTier === 'pro'
-          ? config.quotas.proImagesPerDay
-          : config.quotas.freeImagesPerDay,
+      imagesLimit: 0,
+      monthImagesCount: month.monthImagesCount,
+      monthWindowStart: month.monthWindowStart,
       inputTokens: 0,
       outputTokens: 0,
-      tokenSoftCap:
-        planTier === 'pro'
-          ? config.quotas.proTokenSoftCap
-          : config.quotas.freeTokenSoftCap,
+      tokenSoftCap: 0,
       planTier,
     };
+    applyPlanLimits(snap, planTier);
     usageByUser.set(userId, snap);
   } else {
-    snap.planTier = planTier;
-    snap.messagesLimit =
-      planTier === 'pro'
-        ? config.quotas.proMessagesPerDay
-        : config.quotas.freeMessagesPerDay;
-    snap.imagesLimit =
-      planTier === 'pro'
-        ? config.quotas.proImagesPerDay
-        : config.quotas.freeImagesPerDay;
-    if (snap.imagesCount === undefined) snap.imagesCount = 0;
-    snap.tokenSoftCap =
-      planTier === 'pro'
-        ? config.quotas.proTokenSoftCap
-        : config.quotas.freeTokenSoftCap;
+    const month = resolveMonthCounters(snap, monthStart);
+    snap.monthImagesCount = month.monthImagesCount;
+    snap.monthWindowStart = month.monthWindowStart;
+    applyPlanLimits(snap, planTier);
   }
   return snap;
 }
@@ -126,9 +156,12 @@ export function incrementUsage(
 ): UsageSnapshot {
   const snap = getOrCreateUsage(userId, planTier);
   snap.messagesCount += opts.messages ?? 0;
-  snap.imagesCount = (snap.imagesCount ?? 0) + (opts.images ?? 0);
+  const images = opts.images ?? 0;
+  snap.imagesCount = (snap.imagesCount ?? 0) + images;
+  snap.monthImagesCount = (snap.monthImagesCount ?? 0) + images;
   snap.inputTokens += opts.inputTokens ?? 0;
   snap.outputTokens += opts.outputTokens ?? 0;
+  applyPlanLimits(snap, planTier);
   usageByUser.set(userId, snap);
   return snap;
 }

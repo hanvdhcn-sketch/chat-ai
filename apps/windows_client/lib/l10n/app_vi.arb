@@ -17,7 +17,25 @@
   "freePlan": "Miễn phí",
   "proPlan": "Pro",
   "freeQuotaHint": "Miễn phí: 100 tin/ngày · tối đa 3 ảnh/tin (8 MB), 20 ảnh/ngày",
-  "proQuotaHint": "Pro: 400 tin/ngày · tối đa 10 ảnh/tin (8 MB), 25 ảnh/ngày",
+  "proQuotaHint": "Pro: 400 tin/ngày · tối đa 8 ảnh/tin (8 MB), 20 ảnh/ngày",
+  "messageQuotaReached": "Đã hết hạn mức tin nhắn trong ngày. Vui lòng đợi đến lần đặt lại ngày tiếp theo ({resetsAt}) để tiếp tục.",
+  "@messageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "imageQuotaReached": "Đã hết hạn mức tải ảnh trong ngày. Vui lòng đợi đến lần đặt lại ngày tiếp theo ({resetsAt}) để tải thêm.",
+  "@imageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "monthlyImageAllowanceReached": "Bạn đã hết hạn mức ảnh trong tháng. Tải ảnh tạm thời theo hạn mức Miễn phí (3 ảnh/tin, 20 ảnh/ngày) đến {resetsAt}. Chat văn bản không bị ảnh hưởng.",
+  "@monthlyImageAllowanceReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
   "conversations": "Hội thoại",
   "settings": "Cài đặt",
   "language": "Ngôn ngữ",

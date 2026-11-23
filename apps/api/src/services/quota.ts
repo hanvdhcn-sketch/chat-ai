@@ -1,7 +1,7 @@
 import type { AuthUser } from '../types/index.js';
 import { getOrCreateUsage } from './store.js';
 import { config } from '../config.js';
-import { imageLimitsForPlan } from './quota-context.js';
+import { effectiveImageLimits } from './quota-context.js';
 
 export interface QuotaCheckResult {
   ok: boolean;
@@ -44,8 +44,8 @@ export function checkImageQuota(
   imageCountInMessage: number,
 ): QuotaCheckResult {
   const base = checkQuota(user);
-  const limits = imageLimitsForPlan(user.planTier);
   const usage = base.usage;
+  const limits = effectiveImageLimits(user.planTier, usage);
 
   if (imageCountInMessage <= 0) return base;
 

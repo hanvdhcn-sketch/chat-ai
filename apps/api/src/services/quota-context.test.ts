@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   buildOrbitaQuotaSystemPrompt,
+  effectiveImageLimits,
   imageLimitsForPlan,
+  isProMonthlyImageSoftCapActive,
+  monthResetsAtIso,
+  monthlyImageSoftCapStatus,
   quotaResetsAtIso,
 } from './quota-context.js';
 import type { UsageSnapshot } from '../types/index.js';
@@ -15,6 +19,8 @@ const freeUsage: UsageSnapshot = {
   messagesLimit: 100,
   imagesCount: 2,
   imagesLimit: 20,
+  monthImagesCount: 2,
+  monthWindowStart: '2026-11-01T00:00:00.000Z',
   inputTokens: 0,
   outputTokens: 0,
   tokenSoftCap: 80_000,
@@ -31,8 +37,8 @@ describe('quota-context', () => {
 
   it('reports Pro image limits', () => {
     const lim = imageLimitsForPlan('pro');
-    assert.equal(lim.maxImagesPerMessage, 10);
-    assert.equal(lim.maxImagesPerDay, 25);
+    assert.equal(lim.maxImagesPerMessage, 8);
+    assert.equal(lim.maxImagesPerDay, 20);
   });
 
   it('computes next UTC midnight reset', () => {
@@ -52,5 +58,55 @@ describe('quota-context', () => {
     assert.match(prompt, /never xAI\.com/);
     assert.match(prompt, /Grok\.com Premium/);
     assert.match(prompt, /not xAI\/Grok\.com|never .*SuperGrok|never xAI/i);
+    assert.doesNotMatch(prompt, /soft-cap|monthly image allowance/i);
+  });
+
+  it('activates Pro monthly image soft-cap at 200', () => {
+    assert.equal(isProMonthlyImageSoftCapActive({ monthImagesCount: 199 }, 'pro'), false);
+    assert.equal(isProMonthlyImageSoftCapActive({ monthImagesCount: 200 }, 'pro'), true);
+    assert.equal(isProMonthlyImageSoftCapActive({ monthImagesCount: 250 }, 'free'), false);
+  });
+
+  it('reduces Pro image limits to Free while soft-cap is active', () => {
+    const lim = effectiveImageLimits('pro', { monthImagesCount: 200 });
+    assert.equal(lim.maxImagesPerMessage, 3);
+    assert.equal(lim.maxImagesPerDay, 20);
+    const status = monthlyImageSoftCapStatus(
+      {
+        ...freeUsage,
+        userId: 'u_pro',
+        planTier: 'pro',
+        messagesLimit: 400,
+        monthImagesCount: 200,
+        monthWindowStart: '2026-11-01T00:00:00.000Z',
+      },
+      'pro',
+    );
+    assert.ok(status);
+    assert.equal(status?.effectiveImageTier, 'free');
+    assert.equal(status?.resetsAt, '2026-12-01T00:00:00.000Z');
+  });
+
+  it('computes next UTC month reset', () => {
+    assert.equal(
+      monthResetsAtIso('2026-11-01T00:00:00.000Z'),
+      '2026-12-01T00:00:00.000Z',
+    );
+  });
+
+  it('mentions temporary Free image rates only when soft-cap is active', () => {
+    const prompt = buildOrbitaQuotaSystemPrompt(
+      {
+        ...freeUsage,
+        userId: 'u_pro',
+        planTier: 'pro',
+        messagesLimit: 400,
+        monthImagesCount: 200,
+        monthWindowStart: '2026-11-01T00:00:00.000Z',
+      },
+      'pro',
+    );
+    assert.match(prompt, /temporarily limited to Free-tier/);
+    assert.match(prompt, /2026-12-01/);
   });
 });

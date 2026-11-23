@@ -84,13 +84,17 @@ class ApiClient {
     _ensureOk(res);
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final usage = UsageSnapshot.fromJson(body['usage'] as Map<String, dynamic>);
+    final softCapJson = body['monthlyImageSoftCap'] as Map<String, dynamic>?;
     return UsageResponse(
       usage: usage,
       imageLimits: ImageLimits.fromJson(
         body['imageLimits'] as Map<String, dynamic>?,
-        isPro: usage.planTier == 'pro',
+        isPro: usage.planTier == 'pro' && softCapJson == null,
       ),
       resetsAt: body['resetsAt'] as String?,
+      monthlyImageSoftCap: softCapJson != null
+          ? MonthlyImageSoftCap.fromJson(softCapJson)
+          : null,
     );
   }
 

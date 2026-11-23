@@ -49,7 +49,22 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get proQuotaHint =>
-      'Pro: 400 tin/ngày · tối đa 10 ảnh/tin (8 MB), 25 ảnh/ngày';
+      'Pro: 400 tin/ngày · tối đa 8 ảnh/tin (8 MB), 20 ảnh/ngày';
+
+  @override
+  String messageQuotaReached(String resetsAt) {
+    return 'Đã hết hạn mức tin nhắn trong ngày. Vui lòng đợi đến lần đặt lại ngày tiếp theo ($resetsAt) để tiếp tục.';
+  }
+
+  @override
+  String imageQuotaReached(String resetsAt) {
+    return 'Đã hết hạn mức tải ảnh trong ngày. Vui lòng đợi đến lần đặt lại ngày tiếp theo ($resetsAt) để tải thêm.';
+  }
+
+  @override
+  String monthlyImageAllowanceReached(String resetsAt) {
+    return 'Bạn đã hết hạn mức ảnh trong tháng. Tải ảnh tạm thời theo hạn mức Miễn phí (3 ảnh/tin, 20 ảnh/ngày) đến $resetsAt. Chat văn bản không bị ảnh hưởng.';
+  }
 
   @override
   String get conversations => 'Hội thoại';

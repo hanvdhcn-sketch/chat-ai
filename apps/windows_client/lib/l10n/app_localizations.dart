@@ -173,8 +173,26 @@ abstract class AppLocalizations {
   /// No description provided for @proQuotaHint.
   ///
   /// In en, this message translates to:
-  /// **'Pro: 400 messages/day · up to 10 images/message (8 MB), 25/day'**
+  /// **'Pro: 400 messages/day · up to 8 images/message (8 MB), 20/day'**
   String get proQuotaHint;
+
+  /// No description provided for @messageQuotaReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily message limit reached. Wait until the next day reset ({resetsAt}) to continue.'**
+  String messageQuotaReached(String resetsAt);
+
+  /// No description provided for @imageQuotaReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily image upload limit reached. Wait until the next day reset ({resetsAt}) to upload more.'**
+  String imageQuotaReached(String resetsAt);
+
+  /// No description provided for @monthlyImageAllowanceReached.
+  ///
+  /// In en, this message translates to:
+  /// **'You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 20 per day) until {resetsAt}. Text chat is unaffected.'**
+  String monthlyImageAllowanceReached(String resetsAt);
 
   /// No description provided for @conversations.
   ///

@@ -64,6 +64,9 @@ class _ChatScreenState extends State<ChatScreen> {
   List<ChatMessage> _messages = [];
   UsageSnapshot? _usage;
   ImageLimits? _imageLimits;
+  String? _resetsAt;
+  MonthlyImageSoftCap? _monthlyImageSoftCap;
+  bool _monthlySoftCapNotified = false;
   bool _busy = false;
   bool _streaming = false;
   bool _billingBusy = false;
@@ -140,8 +143,11 @@ class _ChatScreenState extends State<ChatScreen> {
         _conversations = convos.isEmpty ? _demoConversations() : convos;
         _usage = usageRes.usage;
         _imageLimits = usageRes.imageLimits;
+        _resetsAt = usageRes.resetsAt;
+        _monthlyImageSoftCap = usageRes.monthlyImageSoftCap;
         _error = null;
       });
+      _maybeNotifyMonthlyImageSoftCap(usageRes.monthlyImageSoftCap);
       if (convos.isNotEmpty) {
         await _openConversation(convos.first);
       } else if (_conversations.isNotEmpty) {
@@ -331,7 +337,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final usedToday = _usage?.imagesCount ?? 0;
     final limitToday = _usage?.imagesLimit ??
-        (_imageLimits?.maxImagesPerDay ?? (_isPro ? 25 : 20));
+        (_imageLimits?.maxImagesPerDay ?? 20);
     final toLoad = paths.take(slotsLeft).toList();
     final loaded = <PendingAttachment>[];
     var imagesAdded = 0;
@@ -361,7 +367,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 name: att.name,
                 kind: AttachmentKind.unsupported,
                 mimeType: att.mimeType,
-                notice: 'Daily image upload quota reached.',
+                notice: _imageQuotaReachedNotice(),
               ),
             );
             continue;
@@ -431,6 +437,34 @@ class _ChatScreenState extends State<ChatScreen> {
     final sendable = pending.where((a) => a.isSendable).toList();
     if (_streaming) return;
     if (text.isEmpty && sendable.isEmpty) return;
+
+    final remaining = _usage?.remaining;
+    if (remaining != null && remaining <= 0) {
+      final notice = _messageQuotaReachedNotice();
+      setState(() => _error = notice);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(notice)),
+        );
+      }
+      return;
+    }
+
+    final imageCount =
+        sendable.where((a) => a.kind == AttachmentKind.image).length;
+    final imagesRemaining = _usage?.imagesRemaining;
+    if (imageCount > 0 &&
+        imagesRemaining != null &&
+        imageCount > imagesRemaining) {
+      final notice = _imageQuotaReachedNotice();
+      setState(() => _error = notice);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(notice)),
+        );
+      }
+      return;
+    }
 
     final displayContent = _composeDisplayContent(text, pending);
     final attachmentPayload =
@@ -593,8 +627,11 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _usage = usageRes.usage;
           _imageLimits = usageRes.imageLimits;
+          _resetsAt = usageRes.resetsAt;
+          _monthlyImageSoftCap = usageRes.monthlyImageSoftCap;
           _conversations = convos;
         });
+        _maybeNotifyMonthlyImageSoftCap(usageRes.monthlyImageSoftCap);
       } catch (_) {/* ignore refresh errors after stream */}
     } finally {
       await _streamSub?.cancel();
@@ -614,19 +651,67 @@ class _ChatScreenState extends State<ChatScreen> {
     _input.selection = TextSelection.collapsed(offset: _input.text.length);
   }
 
+  String _formatResetsAt([String? iso]) {
+    final raw = iso ?? _resetsAt;
+    var when = raw != null ? DateTime.tryParse(raw)?.toUtc() : null;
+    if (when == null) {
+      final now = DateTime.now().toUtc();
+      when = DateTime.utc(now.year, now.month, now.day + 1);
+    }
+    final y = when.year.toString().padLeft(4, '0');
+    final m = when.month.toString().padLeft(2, '0');
+    final d = when.day.toString().padLeft(2, '0');
+    final hh = when.hour.toString().padLeft(2, '0');
+    final mm = when.minute.toString().padLeft(2, '0');
+    return '$y-$m-$d $hh:$mm UTC';
+  }
+
+  void _maybeNotifyMonthlyImageSoftCap(MonthlyImageSoftCap? softCap) {
+    if (softCap == null || !softCap.active) {
+      _monthlySoftCapNotified = false;
+      return;
+    }
+    if (_monthlySoftCapNotified || !mounted) return;
+    _monthlySoftCapNotified = true;
+    final notice = AppLocalizations.of(context).monthlyImageAllowanceReached(
+      _formatResetsAt(softCap.resetsAt),
+    );
+    setState(() => _error = notice);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(notice), duration: const Duration(seconds: 8)),
+    );
+  }
+
+  String _messageQuotaReachedNotice() {
+    if (!mounted) {
+      return 'Daily message limit reached. Wait until the next day reset '
+          '(${_formatResetsAt()}) to continue.';
+    }
+    return AppLocalizations.of(context).messageQuotaReached(_formatResetsAt());
+  }
+
+  String _imageQuotaReachedNotice() {
+    if (!mounted) {
+      return 'Daily image upload limit reached. Wait until the next day reset '
+          '(${_formatResetsAt()}) to upload more.';
+    }
+    return AppLocalizations.of(context).imageQuotaReached(_formatResetsAt());
+  }
+
   String _friendlyError(Object e) {
     if (e is ApiException) {
       if (e.isQuota) {
         switch (e.code) {
           case 'token_soft_cap_exceeded':
-            return 'Token soft-cap reached for today. Upgrade or try tomorrow.';
+            return _messageQuotaReachedNotice();
           case 'image_quota_exceeded':
-            return 'Daily image upload quota reached. Upgrade to Pro for more.';
+            return _imageQuotaReachedNotice();
           case 'too_many_images_per_message':
             return 'Too many images in one message for your plan '
                 '(max $_maxImagesPerMessage).';
+          case 'message_quota_exceeded':
           default:
-            return 'Daily message quota reached. Upgrade to Pro for more.';
+            return _messageQuotaReachedNotice();
         }
       }
       if (e.isRateLimit) {

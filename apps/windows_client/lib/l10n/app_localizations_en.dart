@@ -49,7 +49,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get proQuotaHint =>
-      'Pro: 400 messages/day · up to 10 images/message (8 MB), 25/day';
+      'Pro: 400 messages/day · up to 8 images/message (8 MB), 20/day';
+
+  @override
+  String messageQuotaReached(String resetsAt) {
+    return 'Daily message limit reached. Wait until the next day reset ($resetsAt) to continue.';
+  }
+
+  @override
+  String imageQuotaReached(String resetsAt) {
+    return 'Daily image upload limit reached. Wait until the next day reset ($resetsAt) to upload more.';
+  }
+
+  @override
+  String monthlyImageAllowanceReached(String resetsAt) {
+    return "You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 20 per day) until $resetsAt. Text chat is unaffected.";
+  }
 
   @override
   String get conversations => 'Conversations';
