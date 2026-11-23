@@ -64,14 +64,14 @@ describe('attachments', () => {
     assert.equal(atts.filter((a) => a.kind === 'image').length, 3);
   });
 
-  it('caps Pro plan to 10 images per message', () => {
-    const raw = Array.from({ length: 12 }, (_, n) => ({
+  it('caps Pro plan to 8 images per message', () => {
+    const raw = Array.from({ length: 10 }, (_, n) => ({
       name: `i${n}.png`,
       mimeType: 'image/png' as const,
       kind: 'image' as const,
       dataBase64: 'abc',
     }));
     const atts = sanitizeAttachments(raw, 'pro');
-    assert.equal(atts.filter((a) => a.kind === 'image').length, 10);
+    assert.equal(atts.filter((a) => a.kind === 'image').length, 8);
   });
 });

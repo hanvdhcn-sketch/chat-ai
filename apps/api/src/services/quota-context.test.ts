@@ -31,8 +31,8 @@ describe('quota-context', () => {
 
   it('reports Pro image limits', () => {
     const lim = imageLimitsForPlan('pro');
-    assert.equal(lim.maxImagesPerMessage, 10);
-    assert.equal(lim.maxImagesPerDay, 25);
+    assert.equal(lim.maxImagesPerMessage, 8);
+    assert.equal(lim.maxImagesPerDay, 20);
   });
 
   it('computes next UTC midnight reset', () => {

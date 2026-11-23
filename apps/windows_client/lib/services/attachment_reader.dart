@@ -11,7 +11,7 @@ class AttachmentReader {
   /// Legacy total cap; prefer [maxImagesForPlan] for images.
   static const int maxAttachments = 5;
   static const int freeMaxImagesPerMessage = 3;
-  static const int proMaxImagesPerMessage = 10;
+  static const int proMaxImagesPerMessage = 8;
 
   static int maxImagesForPlan({required bool isPro}) =>
       isPro ? proMaxImagesPerMessage : freeMaxImagesPerMessage;
