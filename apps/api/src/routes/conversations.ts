@@ -10,6 +10,7 @@ import {
   saveConversation,
 } from '../services/store.js';
 import type { ModelId } from '../types/index.js';
+import { conversationNotFound } from '../lib/errors.js';
 
 const createBody = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -63,7 +64,7 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
       const { id } = request.params as { id: string };
       const conversation = getConversation(user.id, id);
       if (!conversation) {
-        return reply.code(404).send({ error: 'not_found' });
+        return reply.code(404).send(conversationNotFound);
       }
       return {
         conversation,
@@ -80,7 +81,7 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
       const { id } = request.params as { id: string };
       const conversation = getConversation(user.id, id);
       if (!conversation) {
-        return reply.code(404).send({ error: 'not_found' });
+        return reply.code(404).send(conversationNotFound);
       }
       return { messages: listMessages(conversation.id) };
     },
@@ -95,7 +96,7 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
       const { id } = request.params as { id: string };
       const conversation = getConversation(user.id, id);
       if (!conversation) {
-        return reply.code(404).send({ error: 'not_found' });
+        return reply.code(404).send(conversationNotFound);
       }
 
       const body = z

@@ -23,6 +23,7 @@ import {
   incrementUsage,
 } from '../services/store.js';
 import { config } from '../config.js';
+import { conversationNotFound } from '../lib/errors.js';
 
 const maxImageB64 = Math.ceil((config.quotas.maxImageBytes * 4) / 3) + 8;
 
@@ -70,7 +71,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
       const { id } = request.params as { id: string };
       const conversation = getConversation(user.id, id);
       if (!conversation) {
-        return reply.code(404).send({ error: 'not_found' });
+        return reply.code(404).send(conversationNotFound);
       }
 
       const parsed = streamBody.safeParse(request.body);

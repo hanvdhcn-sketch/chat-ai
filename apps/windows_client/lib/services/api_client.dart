@@ -15,6 +15,7 @@ class ApiException implements Exception {
 
   bool get isQuota => statusCode == 402;
   bool get isRateLimit => statusCode == 429;
+  bool get isNotFound => statusCode == 404 || code == 'not_found';
 
   @override
   String toString() => 'ApiException($statusCode, $code): $body';
