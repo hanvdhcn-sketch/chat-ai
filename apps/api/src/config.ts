@@ -77,7 +77,7 @@ export const config = {
   },
 
   quotas: {
-    freeMessagesPerDay: intEnv('FREE_MESSAGES_PER_DAY', 100),
+    freeMessagesPerDay: intEnv('FREE_MESSAGES_PER_DAY', 60),
     proMessagesPerDay: intEnv('PRO_MESSAGES_PER_DAY', 400),
     freeTokenSoftCap: intEnv('FREE_TOKEN_SOFT_CAP_PER_DAY', 80_000),
     proTokenSoftCap: intEnv('PRO_TOKEN_SOFT_CAP_PER_DAY', 800_000),
@@ -86,10 +86,16 @@ export const config = {
     /** Max images attached on a single user message. */
     freeImagesPerMessage: intEnv('FREE_IMAGES_PER_MESSAGE', 3),
     proImagesPerMessage: intEnv('PRO_IMAGES_PER_MESSAGE', 8),
-    /** Max decoded image size (bytes) before base64 encoding. */
+    /** Max decoded Free image size (bytes) before base64 encoding. */
+    freeMaxImageBytes: intEnv('FREE_MAX_IMAGE_BYTES', 5 * 1024 * 1024),
+    /**
+     * Max decoded Pro image size (bytes). Also used as the request body
+     * ceiling so Pro uploads are accepted; Free enforcement uses
+     * freeMaxImageBytes via sanitize/quota.
+     */
     maxImageBytes: intEnv('MAX_IMAGE_BYTES', 8 * 1024 * 1024),
     /** Daily image upload hard quota (successful image attachments counted). */
-    freeImagesPerDay: intEnv('FREE_IMAGES_PER_DAY', 10),
+    freeImagesPerDay: intEnv('FREE_IMAGES_PER_DAY', 8),
     proImagesPerDay: intEnv('PRO_IMAGES_PER_DAY', 20),
     /**
      * Hidden Pro monthly soft-cap (UTC calendar month). When reached, Pro

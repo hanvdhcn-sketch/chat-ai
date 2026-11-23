@@ -16,7 +16,7 @@
   "poweredBy": "Powered by Orbita",
   "freePlan": "Free",
   "proPlan": "Pro",
-  "freeQuotaHint": "Free: 100 messages/day · up to 3 images/message (8 MB), 10/day",
+  "freeQuotaHint": "Free: 60 messages/day · up to 3 images/message (5 MB), 8/day",
   "proQuotaHint": "Pro: 400 messages/day · up to 8 images/message (8 MB), 20/day",
   "messageQuotaReached": "Daily message limit reached. Wait until the next day reset ({resetsAt}) to continue.",
   "@messageQuotaReached": {
@@ -30,7 +30,7 @@
       "resetsAt": { "type": "String" }
     }
   },
-  "monthlyImageAllowanceReached": "You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 10 per day) until {resetsAt}. Text chat is unaffected.",
+  "monthlyImageAllowanceReached": "You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 8 per day, ≤5 MB) until {resetsAt}. Text chat is unaffected.",
   "@monthlyImageAllowanceReached": {
     "placeholders": {
       "resetsAt": { "type": "String" }

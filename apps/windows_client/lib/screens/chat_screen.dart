@@ -329,8 +329,13 @@ class _ChatScreenState extends State<ChatScreen> {
       _imageLimits?.maxImagesPerMessage ??
       AttachmentReader.maxImagesForPlan(isPro: _isPro);
 
+  int get _maxImageBytes =>
+      _imageLimits?.maxImageBytes ??
+      AttachmentReader.maxImageBytesForPlan(isPro: _isPro);
+
   Future<void> _addPaths(Iterable<String> paths) async {
     final maxPerMessage = _maxImagesPerMessage;
+    final maxBytes = _maxImageBytes;
     final currentImages =
         _attachments.where((a) => a.kind == AttachmentKind.image).length;
     final slotsLeft = maxPerMessage - _attachments.length;
@@ -348,13 +353,16 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final usedToday = _usage?.imagesCount ?? 0;
     final limitToday = _usage?.imagesLimit ??
-        (_imageLimits?.maxImagesPerDay ?? (_isPro ? 20 : 10));
+        (_imageLimits?.maxImagesPerDay ?? (_isPro ? 20 : 8));
     final toLoad = paths.take(slotsLeft).toList();
     final loaded = <PendingAttachment>[];
     var imagesAdded = 0;
     for (final path in toLoad) {
       try {
-        final att = await AttachmentReader.fromPath(path);
+        final att = await AttachmentReader.fromPath(
+          path,
+          maxImageBytesOverride: maxBytes,
+        );
         if (att.kind == AttachmentKind.image) {
           if (currentImages + imagesAdded >= maxPerMessage) {
             loaded.add(

@@ -25,7 +25,13 @@ import {
 import { config } from '../config.js';
 import { conversationNotFound } from '../lib/errors.js';
 
-const maxImageB64 = Math.ceil((config.quotas.maxImageBytes * 4) / 3) + 8;
+/** Accept up to Pro size on the wire; Free size is enforced in sanitize/quota. */
+const maxImageB64 =
+  Math.ceil(
+    (Math.max(config.quotas.maxImageBytes, config.quotas.freeMaxImageBytes) *
+      4) /
+      3,
+  ) + 8;
 
 const attachmentSchema = z.object({
   name: z.string().min(1).max(256),
