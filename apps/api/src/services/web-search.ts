@@ -307,7 +307,7 @@ export const WEB_SEARCH_TOOL = {
   function: {
     name: 'web_search',
     description:
-      'Search the live web for current facts, news, times, prices, or anything beyond training data. Use when the user needs up-to-date information.',
+      'Search the live web for current facts, news, prices, or anything beyond training data. Do NOT use this tool for "what time is it now" — the system Current time block is authoritative; clock-site snippets (time.is, etc.) can lag. Use when the user needs other up-to-date information.',
     parameters: {
       type: 'object',
       properties: {

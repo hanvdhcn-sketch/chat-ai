@@ -1,6 +1,7 @@
 import type { PlanTier } from '../config.js';
 import { config } from '../config.js';
 import type { UsageSnapshot } from '../types/index.js';
+import { buildLiveClockSystemBlock } from './live-clock.js';
 
 export interface ImageQuotaLimits {
   maxImagesPerMessage: number;
@@ -24,6 +25,8 @@ export interface QuotaPromptOptions {
   locale?: QuotaPromptLocale | string;
   /** Latest user message text — used to follow the user's language. */
   latestUserMessage?: string;
+  /** Override "now" for tests; defaults to API host Date.now(). */
+  now?: Date;
 }
 
 const VI_CHAR_RE =
@@ -147,14 +150,21 @@ export function buildOrbitaQuotaSystemPrompt(
   const freePlan = imageLimitsForPlan('free');
   const proPlan = imageLimitsForPlan('pro');
 
+  const clockBlock = buildLiveClockSystemBlock(
+    options?.now ?? new Date(),
+    locale,
+  );
+
   if (locale === 'vi') {
     const planLabel = planTier === 'pro' ? 'Pro' : 'Miễn phí';
     const lines = [
       'Bạn là Orbita, ứng dụng chat máy tính Windows chạy trên xAI Grok.',
       'LUÔN trả lời bằng ngôn ngữ của tin nhắn người dùng gần nhất (ví dụ tiếng Việt → trả lời tiếng Việt). Không dùng mẫu tiếng Anh cố định khi người dùng viết tiếng Việt.',
-      'Bạn CÓ THỂ tìm kiếm web qua công cụ khi cần thông tin thời gian thực (giờ hiện tại, tin tức, giá, sự kiện mới). Hãy dùng công cụ tìm kiếm khi thiếu dữ liệu cập nhật; không bịa số liệu thời gian thực.',
+      'Bạn CÓ THỂ tìm kiếm web qua công cụ khi cần thông tin thời gian thực (tin tức, giá, sự kiện mới) — nhưng KHÔNG dùng web search để biết giờ hiện tại; dùng khối Thời gian hiện tại bên dưới.',
       'Khi nói về hạn mức tin nhắn, quota, gói, nâng cấp, số tin còn lại, thời điểm reset, hoặc giới hạn tải ảnh: chỉ dùng số liệu Orbita bên dưới — không nêu xAI.com, Grok.com Premium, SuperGrok hay gói vendor khác. Dịch các số liệu này sang ngôn ngữ người dùng; giữ đúng con số.',
       'Tìm kiếm web tính như tin nhắn chat bình thường theo hạn mức Orbita bên dưới (không có quota tìm kiếm riêng).',
+      '',
+      clockBlock,
       '',
       `Gói Orbita hiện tại: ${planLabel}`,
       `Tin nhắn hôm nay: đã dùng ${usage.messagesCount} / hạn mức ${usage.messagesLimit} tin/ngày (còn ${messagesRemaining}).`,
@@ -184,9 +194,11 @@ export function buildOrbitaQuotaSystemPrompt(
   const lines = [
     'You are Orbita, a Windows desktop chat app powered by xAI Grok.',
     "ALWAYS reply in the same language as the user's latest message (e.g. Vietnamese → reply in Vietnamese). Do not dump a fixed English template when the user writes in another language.",
-    'You CAN search the live web via tools when you need current facts (current time, news, prices, recent events). Use web search when your knowledge may be stale; do not invent real-time numbers.',
+    'You CAN search the live web via tools when you need current facts (news, prices, recent events) — but do NOT use web search to learn the current time; use the Current time block below.',
     'When users ask about message limits, quotas, plans, upgrades, remaining messages, resets, or image upload limits, answer ONLY with Orbita app quotas below — never xAI.com, Grok.com Premium, SuperGrok, or other vendor plans. Translate these facts into the user\'s language; keep the numbers accurate.',
     'Web search counts as a normal Orbita chat message under the quotas below (no separate search quota).',
+    '',
+    clockBlock,
     '',
     `Current Orbita plan: ${planLabel}`,
     `Messages today: ${usage.messagesCount} used / ${usage.messagesLimit} daily limit (${messagesRemaining} remaining).`,

@@ -50,7 +50,9 @@ describe('quota-context', () => {
   });
 
   it('injects Orbita quota facts into system prompt', () => {
-    const prompt = buildOrbitaQuotaSystemPrompt(freeUsage, 'free');
+    const prompt = buildOrbitaQuotaSystemPrompt(freeUsage, 'free', {
+      now: new Date('2026-11-23T08:33:05.000Z'),
+    });
     assert.match(prompt, /Orbita/);
     assert.match(prompt, /Free/);
     assert.match(prompt, /100 daily limit/);
@@ -58,6 +60,9 @@ describe('quota-context', () => {
     assert.match(prompt, /10 images per day/);
     assert.match(prompt, /ALWAYS reply in the same language/);
     assert.match(prompt, /search the live web via tools/i);
+    assert.match(prompt, /do NOT use web search to learn the current time/i);
+    assert.match(prompt, /Current time \(API host clock/);
+    assert.match(prompt, /15:33:05/);
     assert.match(prompt, /Web search counts as a normal Orbita chat message/);
     assert.match(prompt, /never xAI\.com/);
     assert.match(prompt, /Grok\.com Premium/);
@@ -83,9 +88,13 @@ describe('quota-context', () => {
   it('localizes quota system prompt to Vietnamese', () => {
     const prompt = buildOrbitaQuotaSystemPrompt(freeUsage, 'free', {
       latestUserMessage: 'dịch tiếng việt',
+      now: new Date('2026-11-23T08:33:05.000Z'),
     });
     assert.match(prompt, /LUÔN trả lời bằng ngôn ngữ/);
     assert.match(prompt, /tìm kiếm web qua công cụ/i);
+    assert.match(prompt, /KHÔNG dùng web search để biết giờ hiện tại/);
+    assert.match(prompt, /Thời gian hiện tại/);
+    assert.match(prompt, /15:33:05/);
     assert.match(prompt, /Gói Orbita hiện tại: Miễn phí/);
     assert.match(prompt, /10 ảnh\/ngày/);
     assert.match(prompt, /không nêu xAI\.com/);
