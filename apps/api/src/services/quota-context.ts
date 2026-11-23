@@ -44,7 +44,7 @@ export function imageLimitsForPlan(planTier: PlanTier): ImageQuotaLimits {
   }
   return {
     maxImagesPerMessage: config.quotas.freeImagesPerMessage,
-    maxImageBytes: config.quotas.maxImageBytes,
+    maxImageBytes: config.quotas.freeMaxImageBytes,
     maxImagesPerDay: config.quotas.freeImagesPerDay,
   };
 }
@@ -149,6 +149,8 @@ export function buildOrbitaQuotaSystemPrompt(
   const locale = resolveQuotaPromptLocale(options);
   const freePlan = imageLimitsForPlan('free');
   const proPlan = imageLimitsForPlan('pro');
+  const freeMaxMb = Math.round(freePlan.maxImageBytes / (1024 * 1024));
+  const proMaxMb = Math.round(proPlan.maxImageBytes / (1024 * 1024));
 
   const clockBlock = buildLiveClockSystemBlock(
     options?.now ?? new Date(),
@@ -170,7 +172,7 @@ export function buildOrbitaQuotaSystemPrompt(
       `Tin nhắn hôm nay: đã dùng ${usage.messagesCount} / hạn mức ${usage.messagesLimit} tin/ngày (còn ${messagesRemaining}).`,
       `Cửa sổ quota: theo ngày lịch UTC; đặt lại lúc ${resetsAt}.`,
       `Tải ảnh: tối đa ${images.maxImagesPerMessage} ảnh/tin, mỗi ảnh tối đa ${maxMb} MB; đã dùng ${usage.imagesCount ?? 0} / ${usage.imagesLimit ?? images.maxImagesPerDay} ảnh/ngày (còn ${imagesRemaining} hôm nay).`,
-      `Tham chiếu gói: Miễn phí ${config.quotas.freeMessagesPerDay} tin/ngày, ${freePlan.maxImagesPerMessage} ảnh/tin, ${freePlan.maxImagesPerDay} ảnh/ngày; Pro ${config.quotas.proMessagesPerDay} tin/ngày, ${proPlan.maxImagesPerMessage} ảnh/tin, ${proPlan.maxImagesPerDay} ảnh/ngày; mỗi ảnh tối đa ${maxMb} MB.`,
+      `Tham chiếu gói: Miễn phí ${config.quotas.freeMessagesPerDay} tin/ngày, ${freePlan.maxImagesPerMessage} ảnh/tin (≤${freeMaxMb} MB), ${freePlan.maxImagesPerDay} ảnh/ngày; Pro ${config.quotas.proMessagesPerDay} tin/ngày, ${proPlan.maxImagesPerMessage} ảnh/tin (≤${proMaxMb} MB), ${proPlan.maxImagesPerDay} ảnh/ngày.`,
     ];
 
     if (softCap) {
@@ -204,7 +206,7 @@ export function buildOrbitaQuotaSystemPrompt(
     `Messages today: ${usage.messagesCount} used / ${usage.messagesLimit} daily limit (${messagesRemaining} remaining).`,
     `Quota window: calendar day UTC; resets at ${resetsAt}.`,
     `Image uploads: up to ${images.maxImagesPerMessage} image(s) per message, max ${maxMb} MB each; ${usage.imagesCount ?? 0} used / ${usage.imagesLimit ?? images.maxImagesPerDay} images per day (${imagesRemaining} remaining today).`,
-    `Plan reference: Free ${config.quotas.freeMessagesPerDay} messages/day, ${freePlan.maxImagesPerMessage} images/message, ${freePlan.maxImagesPerDay} images/day; Pro ${config.quotas.proMessagesPerDay} messages/day, ${proPlan.maxImagesPerMessage} images/message, ${proPlan.maxImagesPerDay} images/day; max ${maxMb} MB per image.`,
+    `Plan reference: Free ${config.quotas.freeMessagesPerDay} messages/day, ${freePlan.maxImagesPerMessage} images/message (≤${freeMaxMb} MB), ${freePlan.maxImagesPerDay} images/day; Pro ${config.quotas.proMessagesPerDay} messages/day, ${proPlan.maxImagesPerMessage} images/message (≤${proMaxMb} MB), ${proPlan.maxImagesPerDay} images/day.`,
   ];
 
   if (softCap) {

@@ -7,7 +7,10 @@ import '../models/attachment.dart';
 /// Reads dropped/picked files into chat-ready attachments.
 class AttachmentReader {
   static const int maxTextChars = 80000;
+  /** Pro max; prefer [maxImageBytesForPlan] / an explicit override. */
   static const int maxImageBytes = 8 * 1024 * 1024;
+  static const int freeMaxImageBytes = 5 * 1024 * 1024;
+  static const int proMaxImageBytes = 8 * 1024 * 1024;
   /// Legacy total cap; prefer [maxImagesForPlan] for images.
   static const int maxAttachments = 5;
   static const int freeMaxImagesPerMessage = 3;
@@ -15,6 +18,9 @@ class AttachmentReader {
 
   static int maxImagesForPlan({required bool isPro}) =>
       isPro ? proMaxImagesPerMessage : freeMaxImagesPerMessage;
+
+  static int maxImageBytesForPlan({required bool isPro}) =>
+      isPro ? proMaxImageBytes : freeMaxImageBytes;
 
   static int maxAttachmentsForPlan({required bool isPro}) =>
       maxImagesForPlan(isPro: isPro);
@@ -66,7 +72,10 @@ class AttachmentReader {
     '.gif',
   };
 
-  static Future<PendingAttachment> fromPath(String path) async {
+  static Future<PendingAttachment> fromPath(
+    String path, {
+    int? maxImageBytesOverride,
+  }) async {
     final file = File(path);
     final name = file.uri.pathSegments.isNotEmpty
         ? file.uri.pathSegments.last
@@ -87,7 +96,13 @@ class AttachmentReader {
     }
 
     if (_imageExts.contains(ext)) {
-      return _readImage(id: id, path: path, name: name, ext: ext);
+      return _readImage(
+        id: id,
+        path: path,
+        name: name,
+        ext: ext,
+        maxBytes: maxImageBytesOverride ?? maxImageBytes,
+      );
     }
 
     if (_textExts.contains(ext) || ext.isEmpty) {
@@ -163,18 +178,18 @@ class AttachmentReader {
     required String path,
     required String name,
     required String ext,
+    required int maxBytes,
   }) async {
     final file = File(path);
     final raw = await file.readAsBytes();
-    if (raw.length > maxImageBytes) {
+    if (raw.length > maxBytes) {
       return PendingAttachment(
         id: id,
         path: path,
         name: name,
         kind: AttachmentKind.unsupported,
         mimeType: _imageMime(ext),
-        notice:
-            'Image too large (max ${maxImageBytes ~/ (1024 * 1024)} MB).',
+        notice: 'Image too large (max ${maxBytes ~/ (1024 * 1024)} MB).',
       );
     }
 

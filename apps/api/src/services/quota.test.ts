@@ -28,7 +28,7 @@ describe('quota + rate limit', () => {
   it('allows under message quota', () => {
     const r = checkQuota(freeUser);
     assert.equal(r.ok, true);
-    assert.equal(r.usage.messagesLimit, 100);
+    assert.equal(r.usage.messagesLimit, 60);
   });
 
   it('blocks when message hard quota exceeded', () => {

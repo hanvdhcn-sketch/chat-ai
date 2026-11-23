@@ -82,7 +82,7 @@ class UsageSnapshot {
     required this.messagesLimit,
     required this.planTier,
     this.imagesCount = 0,
-    this.imagesLimit = 10,
+    this.imagesLimit = 8,
   });
 
   final int messagesCount;
@@ -101,10 +101,10 @@ class UsageSnapshot {
     final plan = json['planTier'] as String? ?? 'free';
     return UsageSnapshot(
       messagesCount: json['messagesCount'] as int? ?? 0,
-      messagesLimit: json['messagesLimit'] as int? ?? 100,
+      messagesLimit: json['messagesLimit'] as int? ?? 60,
       imagesCount: json['imagesCount'] as int? ?? 0,
       imagesLimit:
-          json['imagesLimit'] as int? ?? (plan == 'pro' ? 20 : 10),
+          json['imagesLimit'] as int? ?? (plan == 'pro' ? 20 : 8),
       planTier: plan,
     );
   }
@@ -125,9 +125,10 @@ class ImageLimits {
     return ImageLimits(
       maxImagesPerMessage:
           json?['maxImagesPerMessage'] as int? ?? (isPro ? 8 : 3),
-      maxImageBytes: json?['maxImageBytes'] as int? ?? (8 * 1024 * 1024),
+      maxImageBytes: json?['maxImageBytes'] as int? ??
+          (isPro ? 8 * 1024 * 1024 : 5 * 1024 * 1024),
       maxImagesPerDay:
-          json?['maxImagesPerDay'] as int? ?? (isPro ? 20 : 10),
+          json?['maxImagesPerDay'] as int? ?? (isPro ? 20 : 8),
     );
   }
 }
