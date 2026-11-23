@@ -61,12 +61,20 @@ export const config = {
   },
 
   quotas: {
-    freeMessagesPerDay: intEnv('FREE_MESSAGES_PER_DAY', 40),
+    freeMessagesPerDay: intEnv('FREE_MESSAGES_PER_DAY', 100),
     proMessagesPerDay: intEnv('PRO_MESSAGES_PER_DAY', 400),
     freeTokenSoftCap: intEnv('FREE_TOKEN_SOFT_CAP_PER_DAY', 80_000),
     proTokenSoftCap: intEnv('PRO_TOKEN_SOFT_CAP_PER_DAY', 800_000),
     freeRateLimitPerMin: intEnv('FREE_RATE_LIMIT_PER_MIN', 5),
     proRateLimitPerMin: intEnv('PRO_RATE_LIMIT_PER_MIN', 30),
+    /** Max images attached on a single user message. */
+    freeImagesPerMessage: intEnv('FREE_IMAGES_PER_MESSAGE', 3),
+    proImagesPerMessage: intEnv('PRO_IMAGES_PER_MESSAGE', 5),
+    /** Max decoded image size (bytes) before base64 encoding. */
+    maxImageBytes: intEnv('MAX_IMAGE_BYTES', 8 * 1024 * 1024),
+    /** Daily image upload hard quota (successful image attachments counted). */
+    freeImagesPerDay: intEnv('FREE_IMAGES_PER_DAY', 20),
+    proImagesPerDay: intEnv('PRO_IMAGES_PER_DAY', 100),
   },
 } as const;
 

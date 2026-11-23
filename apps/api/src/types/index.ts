@@ -63,6 +63,9 @@ export interface UsageSnapshot {
   windowStart: string;
   messagesCount: number;
   messagesLimit: number;
+  /** Successful image attachments uploaded today. */
+  imagesCount: number;
+  imagesLimit: number;
   inputTokens: number;
   outputTokens: number;
   tokenSoftCap: number;

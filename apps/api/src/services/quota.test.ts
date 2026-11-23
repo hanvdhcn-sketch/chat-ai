@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeEach } from 'node:test';
-import { checkQuota } from './quota.js';
+import { checkImageQuota, checkQuota } from './quota.js';
 import { resetStore, setUsageForTests, getOrCreateUsage } from './store.js';
 import { checkRateLimit, resetRateLimits } from './rate-limit.js';
 import type { AuthUser } from '../types/index.js';
@@ -21,7 +21,7 @@ describe('quota + rate limit', () => {
   it('allows under message quota', () => {
     const r = checkQuota(freeUser);
     assert.equal(r.ok, true);
-    assert.equal(r.usage.messagesLimit, 40);
+    assert.equal(r.usage.messagesLimit, 100);
   });
 
   it('blocks when message hard quota exceeded', () => {
@@ -40,6 +40,21 @@ describe('quota + rate limit', () => {
     const r = checkQuota(freeUser);
     assert.equal(r.ok, false);
     assert.equal(r.reason, 'token_soft_cap_exceeded');
+  });
+
+  it('blocks too many images per Free message', () => {
+    const r = checkImageQuota(freeUser, 4);
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, 'too_many_images_per_message');
+  });
+
+  it('blocks when daily image quota would be exceeded', () => {
+    const snap = getOrCreateUsage(freeUser.id, 'free');
+    snap.imagesCount = snap.imagesLimit - 1;
+    setUsageForTests(snap);
+    const r = checkImageQuota(freeUser, 2);
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, 'image_quota_exceeded');
   });
 
   it('rate-limits after N hits per minute', () => {

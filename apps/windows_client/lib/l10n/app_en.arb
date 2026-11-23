@@ -16,6 +16,8 @@
   "poweredBy": "Powered by Orbita",
   "freePlan": "Free",
   "proPlan": "Pro",
+  "freeQuotaHint": "Free: 100 messages/day · up to 3 images/message (8 MB), 20/day",
+  "proQuotaHint": "Pro: 400 messages/day · up to 5 images/message (8 MB), 100/day",
   "conversations": "Conversations",
   "settings": "Settings",
   "language": "Language",

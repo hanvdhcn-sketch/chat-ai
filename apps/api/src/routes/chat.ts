@@ -2,12 +2,15 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
 import { newId } from '../lib/id.js';
-import { checkQuota } from '../services/quota.js';
+import { checkImageQuota, checkQuota } from '../services/quota.js';
+import { buildOrbitaQuotaSystemPrompt } from '../services/quota-context.js';
 import { checkRateLimit } from '../services/rate-limit.js';
 import { streamCompletion } from '../services/ai-gateway.js';
 import {
   buildPersistedUserContent,
   buildUserTurnContent,
+  countImageAttachments,
+  maxAttachmentsInBody,
   sanitizeAttachments,
   toGatewayMessages,
 } from '../services/attachments.js';
@@ -19,13 +22,16 @@ import {
   updateMessage,
   incrementUsage,
 } from '../services/store.js';
+import { config } from '../config.js';
+
+const maxImageB64 = Math.ceil((config.quotas.maxImageBytes * 4) / 3) + 8;
 
 const attachmentSchema = z.object({
   name: z.string().min(1).max(256),
   mimeType: z.string().min(1).max(128),
   kind: z.enum(['image', 'text', 'unsupported']),
   text: z.string().max(100_000).optional(),
-  dataBase64: z.string().max(12_000_000).optional(),
+  dataBase64: z.string().max(maxImageB64).optional(),
   notice: z.string().max(500).optional(),
 });
 
@@ -33,11 +39,11 @@ const streamBody = z
   .object({
     content: z.string().max(16_000).default(''),
     model: z.enum(['grok-fast', 'grok']).optional(),
-    attachments: z.array(attachmentSchema).max(5).optional(),
+    attachments: z.array(attachmentSchema).max(maxAttachmentsInBody).optional(),
   })
   .superRefine((val, ctx) => {
     const hasText = val.content.trim().length > 0;
-    const atts = sanitizeAttachments(val.attachments);
+    const atts = sanitizeAttachments(val.attachments, 'pro');
     const hasUseful = atts.some((a) => a.kind === 'image' || a.kind === 'text');
     if (!hasText && !hasUseful) {
       ctx.addIssue({
@@ -87,7 +93,20 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const attachments = sanitizeAttachments(parsed.data.attachments);
+      const attachments = sanitizeAttachments(
+        parsed.data.attachments,
+        user.planTier,
+      );
+      const imageCount = countImageAttachments(attachments);
+      const imageQuota = checkImageQuota(user, imageCount);
+      if (!imageQuota.ok) {
+        return reply.code(402).send({
+          error: imageQuota.reason,
+          usage: imageQuota.usage,
+          upgradeRequired: user.planTier === 'free',
+        });
+      }
+
       const persistedContent = buildPersistedUserContent(
         parsed.data.content,
         attachments,
@@ -147,7 +166,15 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
           role: m.role as 'user' | 'assistant' | 'system',
           content: m.content,
         }));
-      const gatewayMessages = toGatewayMessages(history, userTurnContent);
+      const quotaSystemPrompt = buildOrbitaQuotaSystemPrompt(
+        quota.usage,
+        user.planTier,
+      );
+      const gatewayMessages = toGatewayMessages(
+        history,
+        userTurnContent,
+        quotaSystemPrompt,
+      );
 
       let assembled = '';
       const started = Date.now();
@@ -219,6 +246,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
             });
             incrementUsage(user.id, user.planTier, {
               messages: 1,
+              images: imageCount,
               inputTokens: chunk.inputTokens ?? 0,
               outputTokens: chunk.outputTokens ?? 0,
             });
@@ -247,6 +275,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
           if (assembled) {
             incrementUsage(user.id, user.planTier, {
               messages: 1,
+              images: imageCount,
               inputTokens: 0,
               outputTokens: Math.ceil(assembled.length / 4),
             });

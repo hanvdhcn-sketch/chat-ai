@@ -164,6 +164,18 @@ abstract class AppLocalizations {
   /// **'Pro'**
   String get proPlan;
 
+  /// No description provided for @freeQuotaHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Free: 100 messages/day · up to 3 images/message (8 MB), 20/day'**
+  String get freeQuotaHint;
+
+  /// No description provided for @proQuotaHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro: 400 messages/day · up to 5 images/message (8 MB), 100/day'**
+  String get proQuotaHint;
+
   /// No description provided for @conversations.
   ///
   /// In en, this message translates to:

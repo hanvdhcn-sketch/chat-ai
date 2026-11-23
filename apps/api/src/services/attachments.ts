@@ -1,4 +1,7 @@
+import type { PlanTier } from '../config.js';
+import { config } from '../config.js';
 import type { ChatContent, ChatContentPart, ChatTurn } from './ai-gateway.js';
+import { imageLimitsForPlan } from './quota-context.js';
 
 export type AttachmentKind = 'image' | 'text' | 'unsupported';
 
@@ -11,15 +14,25 @@ export interface IncomingAttachment {
   notice?: string;
 }
 
-const MAX_IMAGE_B64 = 12_000_000;
 const MAX_TEXT = 100_000;
+
+/** Approx base64 length for a given raw byte limit (+ padding slack). */
+function maxBase64ForBytes(maxBytes: number): number {
+  return Math.ceil((maxBytes * 4) / 3) + 8;
+}
 
 export function sanitizeAttachments(
   raw: IncomingAttachment[] | undefined,
+  planTier: PlanTier = 'free',
 ): IncomingAttachment[] {
   if (!raw?.length) return [];
+  const limits = imageLimitsForPlan(planTier);
+  const maxB64 = maxBase64ForBytes(limits.maxImageBytes);
+  const maxTotal = Math.max(limits.maxImagesPerMessage, 5);
   const out: IncomingAttachment[] = [];
-  for (const a of raw.slice(0, 5)) {
+  let imageCount = 0;
+
+  for (const a of raw.slice(0, maxTotal)) {
     if (!a?.name || !a.kind) continue;
     if (a.kind === 'unsupported') {
       out.push({
@@ -43,8 +56,12 @@ export function sanitizeAttachments(
       continue;
     }
     if (a.kind === 'image') {
-      const dataBase64 = (a.dataBase64 ?? '').slice(0, MAX_IMAGE_B64);
+      if (imageCount >= limits.maxImagesPerMessage) continue;
+      const dataBase64 = (a.dataBase64 ?? '').slice(0, maxB64);
       if (!dataBase64) continue;
+      // Reject oversize after decode estimate (~3/4 of b64 length).
+      const approxBytes = Math.floor((dataBase64.length * 3) / 4);
+      if (approxBytes > limits.maxImageBytes) continue;
       const mime = normalizeImageMime(a.mimeType);
       out.push({
         name: a.name.slice(0, 256),
@@ -53,6 +70,7 @@ export function sanitizeAttachments(
         dataBase64,
         notice: a.notice?.slice(0, 500),
       });
+      imageCount += 1;
     }
   }
   return out;
@@ -130,14 +148,32 @@ export function hasImageAttachments(attachments: IncomingAttachment[]): boolean 
   return attachments.some((a) => a.kind === 'image' && !!a.dataBase64);
 }
 
+export function countImageAttachments(attachments: IncomingAttachment[]): number {
+  return attachments.filter((a) => a.kind === 'image' && !!a.dataBase64).length;
+}
+
 /** Map stored history strings into ChatTurn[]; last user may be multimodal. */
 export function toGatewayMessages(
   history: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
   currentUserContent: ChatContent,
+  systemPrompt?: string,
 ): ChatTurn[] {
   const prior = history.slice(0, -1).map((m) => ({
     role: m.role,
     content: m.content,
   }));
-  return [...prior, { role: 'user', content: currentUserContent }];
+  const turns: ChatTurn[] = [
+    ...prior,
+    { role: 'user', content: currentUserContent },
+  ];
+  if (systemPrompt?.trim()) {
+    return [{ role: 'system', content: systemPrompt.trim() }, ...turns];
+  }
+  return turns;
 }
+
+/** Max attachments accepted in the Zod body (covers Pro image cap + text). */
+export const maxAttachmentsInBody = Math.max(
+  config.quotas.proImagesPerMessage,
+  5,
+);

@@ -8,7 +8,16 @@ import '../models/attachment.dart';
 class AttachmentReader {
   static const int maxTextChars = 80000;
   static const int maxImageBytes = 8 * 1024 * 1024;
+  /// Legacy total cap; prefer [maxImagesForPlan] for images.
   static const int maxAttachments = 5;
+  static const int freeMaxImagesPerMessage = 3;
+  static const int proMaxImagesPerMessage = 5;
+
+  static int maxImagesForPlan({required bool isPro}) =>
+      isPro ? proMaxImagesPerMessage : freeMaxImagesPerMessage;
+
+  static int maxAttachmentsForPlan({required bool isPro}) =>
+      maxImagesForPlan(isPro: isPro);
 
   static const _textExts = {
     '.txt',

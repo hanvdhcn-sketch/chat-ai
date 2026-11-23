@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class LeftNav extends StatelessWidget {
@@ -277,7 +278,7 @@ class _UpgradeCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Unlock Grok API access, more features, and higher limits.',
+            AppLocalizations.of(context).proQuotaHint,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.55),
               fontSize: 12,
