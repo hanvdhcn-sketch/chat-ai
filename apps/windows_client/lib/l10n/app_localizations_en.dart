@@ -45,7 +45,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get freeQuotaHint =>
-      'Free: 100 messages/day · up to 3 images/message (8 MB), 10/day';
+      'Free: 60 messages/day · up to 3 images/message (5 MB), 8/day';
 
   @override
   String get proQuotaHint =>
@@ -63,7 +63,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String monthlyImageAllowanceReached(String resetsAt) {
-    return "You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 10 per day) until $resetsAt. Text chat is unaffected.";
+    return "You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 8 per day) until $resetsAt. Text chat is unaffected.";
   }
 
   @override

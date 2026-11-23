@@ -45,7 +45,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get freeQuotaHint =>
-      'Miễn phí: 100 tin/ngày · tối đa 3 ảnh/tin (8 MB), 10 ảnh/ngày';
+      'Miễn phí: 60 tin/ngày · tối đa 3 ảnh/tin (5 MB), 8 ảnh/ngày';
 
   @override
   String get proQuotaHint =>
@@ -63,7 +63,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String monthlyImageAllowanceReached(String resetsAt) {
-    return 'Bạn đã hết hạn mức ảnh trong tháng. Tải ảnh tạm thời theo hạn mức Miễn phí (3 ảnh/tin, 10 ảnh/ngày) đến $resetsAt. Chat văn bản không bị ảnh hưởng.';
+    return 'Bạn đã hết hạn mức ảnh trong tháng. Tải ảnh tạm thời theo hạn mức Miễn phí (3 ảnh/tin, 8 ảnh/ngày) đến $resetsAt. Chat văn bản không bị ảnh hưởng.';
   }
 
   @override

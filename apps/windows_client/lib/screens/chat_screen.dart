@@ -348,13 +348,19 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final usedToday = _usage?.imagesCount ?? 0;
     final limitToday = _usage?.imagesLimit ??
-        (_imageLimits?.maxImagesPerDay ?? (_isPro ? 20 : 10));
+        (_imageLimits?.maxImagesPerDay ??
+            AttachmentReader.maxImagesPerDayForPlan(isPro: _isPro));
+    final imageByteCap = _imageLimits?.maxImageBytes ??
+        AttachmentReader.maxImageBytesForPlan(isPro: _isPro);
     final toLoad = paths.take(slotsLeft).toList();
     final loaded = <PendingAttachment>[];
     var imagesAdded = 0;
     for (final path in toLoad) {
       try {
-        final att = await AttachmentReader.fromPath(path);
+        final att = await AttachmentReader.fromPath(
+          path,
+          maxImageBytes: imageByteCap,
+        );
         if (att.kind == AttachmentKind.image) {
           if (currentImages + imagesAdded >= maxPerMessage) {
             loaded.add(
