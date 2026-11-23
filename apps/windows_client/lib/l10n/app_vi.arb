@@ -16,7 +16,7 @@
   "poweredBy": "Powered by Orbita",
   "freePlan": "Miễn phí",
   "proPlan": "Pro",
-  "freeQuotaHint": "Miễn phí: 100 tin/ngày · tối đa 3 ảnh/tin (8 MB), 10 ảnh/ngày",
+  "freeQuotaHint": "Miễn phí: 60 tin/ngày · tối đa 3 ảnh/tin (5 MB), 8 ảnh/ngày",
   "proQuotaHint": "Pro: 400 tin/ngày · tối đa 8 ảnh/tin (8 MB), 20 ảnh/ngày",
   "messageQuotaReached": "Đã hết hạn mức tin nhắn trong ngày. Vui lòng đợi đến lần đặt lại ngày tiếp theo ({resetsAt}) để tiếp tục.",
   "@messageQuotaReached": {
@@ -30,7 +30,7 @@
       "resetsAt": { "type": "String" }
     }
   },
-  "monthlyImageAllowanceReached": "Bạn đã hết hạn mức ảnh trong tháng. Tải ảnh tạm thời theo hạn mức Miễn phí (3 ảnh/tin, 10 ảnh/ngày) đến {resetsAt}. Chat văn bản không bị ảnh hưởng.",
+  "monthlyImageAllowanceReached": "Bạn đã hết hạn mức ảnh trong tháng. Tải ảnh tạm thời theo hạn mức Miễn phí (3 ảnh/tin, 8 ảnh/ngày) đến {resetsAt}. Chat văn bản không bị ảnh hưởng.",
   "@monthlyImageAllowanceReached": {
     "placeholders": {
       "resetsAt": { "type": "String" }

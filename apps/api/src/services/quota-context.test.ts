@@ -17,9 +17,9 @@ const freeUsage: UsageSnapshot = {
   window: 'day',
   windowStart: '2026-11-23T00:00:00.000Z',
   messagesCount: 3,
-  messagesLimit: 100,
+  messagesLimit: 60,
   imagesCount: 2,
-  imagesLimit: 10,
+  imagesLimit: 8,
   monthImagesCount: 2,
   monthWindowStart: '2026-11-01T00:00:00.000Z',
   inputTokens: 0,
@@ -32,14 +32,15 @@ describe('quota-context', () => {
   it('reports Free image limits', () => {
     const lim = imageLimitsForPlan('free');
     assert.equal(lim.maxImagesPerMessage, 3);
-    assert.equal(lim.maxImagesPerDay, 10);
-    assert.equal(lim.maxImageBytes, 8 * 1024 * 1024);
+    assert.equal(lim.maxImagesPerDay, 8);
+    assert.equal(lim.maxImageBytes, 5 * 1024 * 1024);
   });
 
   it('reports Pro image limits', () => {
     const lim = imageLimitsForPlan('pro');
     assert.equal(lim.maxImagesPerMessage, 8);
     assert.equal(lim.maxImagesPerDay, 20);
+    assert.equal(lim.maxImageBytes, 8 * 1024 * 1024);
   });
 
   it('computes next UTC midnight reset', () => {
@@ -55,9 +56,12 @@ describe('quota-context', () => {
     });
     assert.match(prompt, /Orbita/);
     assert.match(prompt, /Free/);
-    assert.match(prompt, /100 daily limit/);
-    assert.match(prompt, /97 remaining/);
-    assert.match(prompt, /10 images per day/);
+    assert.match(prompt, /60 daily limit/);
+    assert.match(prompt, /57 remaining/);
+    assert.match(prompt, /8 images per day/);
+    assert.match(prompt, /max 5 MB each/);
+    assert.match(prompt, /≤5 MB/);
+    assert.match(prompt, /≤8 MB/);
     assert.match(prompt, /ALWAYS reply in the same language/);
     assert.match(prompt, /search the live web via tools/i);
     assert.match(prompt, /do NOT use web search to learn the current time/i);
@@ -96,7 +100,8 @@ describe('quota-context', () => {
     assert.match(prompt, /Thời gian hiện tại/);
     assert.match(prompt, /15:33:05/);
     assert.match(prompt, /Gói Orbita hiện tại: Miễn phí/);
-    assert.match(prompt, /10 ảnh\/ngày/);
+    assert.match(prompt, /8 ảnh\/ngày/);
+    assert.match(prompt, /mỗi ảnh tối đa 5 MB/);
     assert.match(prompt, /không nêu xAI\.com/);
     assert.doesNotMatch(prompt, /ALWAYS reply in the same language/);
   });
@@ -110,7 +115,8 @@ describe('quota-context', () => {
   it('reduces Pro image limits to Free while soft-cap is active', () => {
     const lim = effectiveImageLimits('pro', { monthImagesCount: 200 });
     assert.equal(lim.maxImagesPerMessage, 3);
-    assert.equal(lim.maxImagesPerDay, 10);
+    assert.equal(lim.maxImagesPerDay, 8);
+    assert.equal(lim.maxImageBytes, 5 * 1024 * 1024);
     const status = monthlyImageSoftCapStatus(
       {
         ...freeUsage,

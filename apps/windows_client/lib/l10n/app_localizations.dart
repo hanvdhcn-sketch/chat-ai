@@ -167,7 +167,7 @@ abstract class AppLocalizations {
   /// No description provided for @freeQuotaHint.
   ///
   /// In en, this message translates to:
-  /// **'Free: 100 messages/day · up to 3 images/message (8 MB), 10/day'**
+  /// **'Free: 60 messages/day · up to 3 images/message (5 MB), 8/day'**
   String get freeQuotaHint;
 
   /// No description provided for @proQuotaHint.
@@ -191,7 +191,7 @@ abstract class AppLocalizations {
   /// No description provided for @monthlyImageAllowanceReached.
   ///
   /// In en, this message translates to:
-  /// **'You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 10 per day) until {resetsAt}. Text chat is unaffected.'**
+  /// **'You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 8 per day) until {resetsAt}. Text chat is unaffected.'**
   String monthlyImageAllowanceReached(String resetsAt);
 
   /// No description provided for @conversations.

@@ -25,7 +25,13 @@ import {
 import { config } from '../config.js';
 import { conversationNotFound } from '../lib/errors.js';
 
-const maxImageB64 = Math.ceil((config.quotas.maxImageBytes * 4) / 3) + 8;
+/** Request-body ceiling: allow the larger of Free/Pro per-image caps. */
+const maxImageB64 =
+  Math.ceil(
+    (Math.max(config.quotas.freeMaxImageBytes, config.quotas.maxImageBytes) *
+      4) /
+      3,
+  ) + 8;
 
 const attachmentSchema = z.object({
   name: z.string().min(1).max(256),
