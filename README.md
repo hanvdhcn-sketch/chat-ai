@@ -70,8 +70,11 @@ flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3001
 | `SUPABASE_JWT_SECRET` | API only | Verify JWTs |
 | `DATABASE_URL` | API | Postgres |
 | `REDIS_URL` | API | Rate limit / usage cache |
-| `XAI_API_KEY` | API only | Grok inference (SSE via OpenAI-compatible chat completions) |
+| `XAI_API_KEY` | API only | Grok inference + native web_search (Responses API) |
 | `XAI_GROK_MODEL` / `XAI_GROK_FAST_MODEL` | API | Optional Grok model ids |
+| `XAI_WEB_SEARCH_MODE` | API | `xai` (default) / `local` / `off` |
+| `WEB_SEARCH_TIMEOUT_MS` | API | Search-enabled request timeout (default 90000) |
+| `BRAVE_SEARCH_API_KEY` | API only | Optional; used when `XAI_WEB_SEARCH_MODE=local` |
 | `MS_STORE_TENANT_ID` | API only | Azure AD tenant for Collections API |
 | `MS_STORE_CLIENT_ID` | API only | Azure AD app client id |
 | `MS_STORE_CLIENT_SECRET` | API only | Azure AD app secret |

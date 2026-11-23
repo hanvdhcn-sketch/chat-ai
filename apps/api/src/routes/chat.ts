@@ -228,6 +228,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
               model: chunk.model,
               vendor: chunk.vendor,
               stub: chunk.stub ?? false,
+              webSearch: chunk.webSearch ?? false,
             });
           } else if (chunk.type === 'delta' && chunk.text) {
             assembled += chunk.text;
@@ -263,6 +264,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
               inputTokens: chunk.inputTokens,
               outputTokens: chunk.outputTokens,
               stub: chunk.stub ?? false,
+              webSearch: chunk.webSearch ?? false,
             });
           } else if (chunk.type === 'error') {
             finalizeAssistant({
