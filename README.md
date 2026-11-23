@@ -88,7 +88,7 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 | Billing | — | Microsoft Store subscription add-on |
 | Messages/day | 100 | 400 |
 | Images/message | 3 (≤8 MB each) | 8 (≤8 MB each) |
-| Images/day | 20 | 20 |
+| Images/day | 10 | 20 |
 | Models | Grok Fast (quota-limited) | Grok (full API) |
 | Branding | “Powered by Orbita” badge | Hidden |
 | UI languages | VI + EN | VI + EN |

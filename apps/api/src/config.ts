@@ -73,7 +73,7 @@ export const config = {
     /** Max decoded image size (bytes) before base64 encoding. */
     maxImageBytes: intEnv('MAX_IMAGE_BYTES', 8 * 1024 * 1024),
     /** Daily image upload hard quota (successful image attachments counted). */
-    freeImagesPerDay: intEnv('FREE_IMAGES_PER_DAY', 20),
+    freeImagesPerDay: intEnv('FREE_IMAGES_PER_DAY', 10),
     proImagesPerDay: intEnv('PRO_IMAGES_PER_DAY', 20),
     /**
      * Hidden Pro monthly soft-cap (UTC calendar month). When reached, Pro

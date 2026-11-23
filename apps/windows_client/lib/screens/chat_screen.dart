@@ -337,7 +337,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final usedToday = _usage?.imagesCount ?? 0;
     final limitToday = _usage?.imagesLimit ??
-        (_imageLimits?.maxImagesPerDay ?? 20);
+        (_imageLimits?.maxImagesPerDay ?? (_isPro ? 20 : 10));
     final toLoad = paths.take(slotsLeft).toList();
     final loaded = <PendingAttachment>[];
     var imagesAdded = 0;
@@ -546,6 +546,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final stream = _api.streamMessage(
       conversationId: conversation.id,
       content: text,
+      locale: _localeOverride.languageCode,
       attachments: attachmentPayload,
     );
     _cancelStream = stream.cancel;
