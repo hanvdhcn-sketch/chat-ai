@@ -19,6 +19,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   desktop_drop: ^0.9.2
   file_picker: ^7.0.2
+  speech_to_text: ^7.5.0
 
 dev_dependencies:
   flutter_test:
@@ -36,5 +37,5 @@ msix_config:
   publisher_display_name: Orbita Publisher Placeholder
   identity_name: ChatAI.Placeholder
   msix_version: 0.1.0.0
-  capabilities: internetClient
+  capabilities: internetClient, microphone
   languages: en-us, vi-vn

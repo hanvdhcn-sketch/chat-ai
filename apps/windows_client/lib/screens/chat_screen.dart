@@ -912,6 +912,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   streaming: _streaming,
                   onSend: _send,
                   onStop: _stop,
+                  localeCode: _localeOverride.languageCode,
                   attachments: _attachments,
                   onRemoveAttachment: (id) {
                     setState(
@@ -919,6 +920,15 @@ class _ChatScreenState extends State<ChatScreen> {
                     );
                   },
                   onAttach: _pickAttachments,
+                  onDictationError: (msg) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(msg),
+                        duration: const Duration(seconds: 5),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
