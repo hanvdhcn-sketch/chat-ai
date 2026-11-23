@@ -173,7 +173,7 @@ abstract class AppLocalizations {
   /// No description provided for @proQuotaHint.
   ///
   /// In en, this message translates to:
-  /// **'Pro: 400 messages/day · up to 5 images/message (8 MB), 100/day'**
+  /// **'Pro: 400 messages/day · up to 10 images/message (8 MB), 25/day'**
   String get proQuotaHint;
 
   /// No description provided for @conversations.

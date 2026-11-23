@@ -331,7 +331,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final usedToday = _usage?.imagesCount ?? 0;
     final limitToday = _usage?.imagesLimit ??
-        (_imageLimits?.maxImagesPerDay ?? (_isPro ? 100 : 20));
+        (_imageLimits?.maxImagesPerDay ?? (_isPro ? 25 : 20));
     final toLoad = paths.take(slotsLeft).toList();
     final loaded = <PendingAttachment>[];
     var imagesAdded = 0;

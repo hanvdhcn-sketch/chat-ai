@@ -122,9 +122,9 @@ class ImageLimits {
   factory ImageLimits.fromJson(Map<String, dynamic>? json, {bool isPro = false}) {
     return ImageLimits(
       maxImagesPerMessage:
-          json?['maxImagesPerMessage'] as int? ?? (isPro ? 5 : 3),
+          json?['maxImagesPerMessage'] as int? ?? (isPro ? 10 : 3),
       maxImageBytes: json?['maxImageBytes'] as int? ?? (8 * 1024 * 1024),
-      maxImagesPerDay: json?['maxImagesPerDay'] as int? ?? (isPro ? 100 : 20),
+      maxImagesPerDay: json?['maxImagesPerDay'] as int? ?? (isPro ? 25 : 20),
     );
   }
 }

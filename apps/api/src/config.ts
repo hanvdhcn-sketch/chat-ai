@@ -69,12 +69,12 @@ export const config = {
     proRateLimitPerMin: intEnv('PRO_RATE_LIMIT_PER_MIN', 30),
     /** Max images attached on a single user message. */
     freeImagesPerMessage: intEnv('FREE_IMAGES_PER_MESSAGE', 3),
-    proImagesPerMessage: intEnv('PRO_IMAGES_PER_MESSAGE', 5),
+    proImagesPerMessage: intEnv('PRO_IMAGES_PER_MESSAGE', 10),
     /** Max decoded image size (bytes) before base64 encoding. */
     maxImageBytes: intEnv('MAX_IMAGE_BYTES', 8 * 1024 * 1024),
     /** Daily image upload hard quota (successful image attachments counted). */
     freeImagesPerDay: intEnv('FREE_IMAGES_PER_DAY', 20),
-    proImagesPerDay: intEnv('PRO_IMAGES_PER_DAY', 100),
+    proImagesPerDay: intEnv('PRO_IMAGES_PER_DAY', 25),
   },
 } as const;
 

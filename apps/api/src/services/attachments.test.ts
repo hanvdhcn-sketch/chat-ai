@@ -63,4 +63,15 @@ describe('attachments', () => {
     const atts = sanitizeAttachments(raw, 'free');
     assert.equal(atts.filter((a) => a.kind === 'image').length, 3);
   });
+
+  it('caps Pro plan to 10 images per message', () => {
+    const raw = Array.from({ length: 12 }, (_, n) => ({
+      name: `i${n}.png`,
+      mimeType: 'image/png' as const,
+      kind: 'image' as const,
+      dataBase64: 'abc',
+    }));
+    const atts = sanitizeAttachments(raw, 'pro');
+    assert.equal(atts.filter((a) => a.kind === 'image').length, 10);
+  });
 });
