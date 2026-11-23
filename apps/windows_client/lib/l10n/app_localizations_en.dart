@@ -44,6 +44,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get proPlan => 'Pro';
 
   @override
+  String get freeQuotaHint =>
+      'Free: 100 messages/day · up to 3 images/message (8 MB), 20/day';
+
+  @override
+  String get proQuotaHint =>
+      'Pro: 400 messages/day · up to 5 images/message (8 MB), 100/day';
+
+  @override
   String get conversations => 'Conversations';
 
   @override

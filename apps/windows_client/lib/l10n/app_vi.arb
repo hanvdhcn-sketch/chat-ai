@@ -16,6 +16,8 @@
   "poweredBy": "Powered by Orbita",
   "freePlan": "Miễn phí",
   "proPlan": "Pro",
+  "freeQuotaHint": "Miễn phí: 100 tin/ngày · tối đa 3 ảnh/tin (8 MB), 20 ảnh/ngày",
+  "proQuotaHint": "Pro: 400 tin/ngày · tối đa 5 ảnh/tin (8 MB), 100 ảnh/ngày",
   "conversations": "Hội thoại",
   "settings": "Cài đặt",
   "language": "Ngôn ngữ",

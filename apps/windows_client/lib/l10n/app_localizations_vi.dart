@@ -44,6 +44,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get proPlan => 'Pro';
 
   @override
+  String get freeQuotaHint =>
+      'Miễn phí: 100 tin/ngày · tối đa 3 ảnh/tin (8 MB), 20 ảnh/ngày';
+
+  @override
+  String get proQuotaHint =>
+      'Pro: 400 tin/ngày · tối đa 5 ảnh/tin (8 MB), 100 ảnh/ngày';
+
+  @override
   String get conversations => 'Hội thoại';
 
   @override

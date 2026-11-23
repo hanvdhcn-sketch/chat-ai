@@ -81,6 +81,11 @@ export function getOrCreateUsage(
         planTier === 'pro'
           ? config.quotas.proMessagesPerDay
           : config.quotas.freeMessagesPerDay,
+      imagesCount: 0,
+      imagesLimit:
+        planTier === 'pro'
+          ? config.quotas.proImagesPerDay
+          : config.quotas.freeImagesPerDay,
       inputTokens: 0,
       outputTokens: 0,
       tokenSoftCap:
@@ -96,6 +101,11 @@ export function getOrCreateUsage(
       planTier === 'pro'
         ? config.quotas.proMessagesPerDay
         : config.quotas.freeMessagesPerDay;
+    snap.imagesLimit =
+      planTier === 'pro'
+        ? config.quotas.proImagesPerDay
+        : config.quotas.freeImagesPerDay;
+    if (snap.imagesCount === undefined) snap.imagesCount = 0;
     snap.tokenSoftCap =
       planTier === 'pro'
         ? config.quotas.proTokenSoftCap
@@ -107,10 +117,16 @@ export function getOrCreateUsage(
 export function incrementUsage(
   userId: string,
   planTier: PlanTier,
-  opts: { messages?: number; inputTokens?: number; outputTokens?: number },
+  opts: {
+    messages?: number;
+    images?: number;
+    inputTokens?: number;
+    outputTokens?: number;
+  },
 ): UsageSnapshot {
   const snap = getOrCreateUsage(userId, planTier);
   snap.messagesCount += opts.messages ?? 0;
+  snap.imagesCount = (snap.imagesCount ?? 0) + (opts.images ?? 0);
   snap.inputTokens += opts.inputTokens ?? 0;
   snap.outputTokens += opts.outputTokens ?? 0;
   usageByUser.set(userId, snap);

@@ -81,22 +81,64 @@ class UsageSnapshot {
     required this.messagesCount,
     required this.messagesLimit,
     required this.planTier,
+    this.imagesCount = 0,
+    this.imagesLimit = 20,
   });
 
   final int messagesCount;
   final int messagesLimit;
+  final int imagesCount;
+  final int imagesLimit;
   final String planTier;
 
   int get remaining =>
       (messagesLimit - messagesCount).clamp(0, messagesLimit);
 
+  int get imagesRemaining =>
+      (imagesLimit - imagesCount).clamp(0, imagesLimit);
+
   factory UsageSnapshot.fromJson(Map<String, dynamic> json) {
     return UsageSnapshot(
       messagesCount: json['messagesCount'] as int? ?? 0,
-      messagesLimit: json['messagesLimit'] as int? ?? 40,
+      messagesLimit: json['messagesLimit'] as int? ?? 100,
+      imagesCount: json['imagesCount'] as int? ?? 0,
+      imagesLimit: json['imagesLimit'] as int? ?? 20,
       planTier: json['planTier'] as String? ?? 'free',
     );
   }
+}
+
+class ImageLimits {
+  ImageLimits({
+    required this.maxImagesPerMessage,
+    required this.maxImageBytes,
+    required this.maxImagesPerDay,
+  });
+
+  final int maxImagesPerMessage;
+  final int maxImageBytes;
+  final int maxImagesPerDay;
+
+  factory ImageLimits.fromJson(Map<String, dynamic>? json, {bool isPro = false}) {
+    return ImageLimits(
+      maxImagesPerMessage:
+          json?['maxImagesPerMessage'] as int? ?? (isPro ? 5 : 3),
+      maxImageBytes: json?['maxImageBytes'] as int? ?? (8 * 1024 * 1024),
+      maxImagesPerDay: json?['maxImagesPerDay'] as int? ?? (isPro ? 100 : 20),
+    );
+  }
+}
+
+class UsageResponse {
+  UsageResponse({
+    required this.usage,
+    required this.imageLimits,
+    this.resetsAt,
+  });
+
+  final UsageSnapshot usage;
+  final ImageLimits imageLimits;
+  final String? resetsAt;
 }
 
 class StoreProduct {

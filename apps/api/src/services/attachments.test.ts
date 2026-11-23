@@ -52,4 +52,15 @@ describe('attachments', () => {
     const persisted = buildPersistedUserContent('', atts);
     assert.match(persisted, /Unsupported attachment: doc\.pdf/);
   });
+
+  it('caps Free plan to 3 images per message', () => {
+    const raw = [1, 2, 3, 4].map((n) => ({
+      name: `i${n}.png`,
+      mimeType: 'image/png' as const,
+      kind: 'image' as const,
+      dataBase64: 'abc',
+    }));
+    const atts = sanitizeAttachments(raw, 'free');
+    assert.equal(atts.filter((a) => a.kind === 'image').length, 3);
+  });
 });

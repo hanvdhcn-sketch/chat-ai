@@ -86,7 +86,9 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 |------|------|-----|
 | Price | $0 | $9.99/mo · 7-day trial (if Partner Center allows) |
 | Billing | — | Microsoft Store subscription add-on |
-| Messages/day | ~40 | ~400 |
+| Messages/day | 100 | 400 |
+| Images/message | 3 (≤8 MB each) | 5 (≤8 MB each) |
+| Images/day | 20 | 100 |
 | Models | Grok Fast (quota-limited) | Grok (full API) |
 | Branding | “Powered by Orbita” badge | Hidden |
 | UI languages | VI + EN | VI + EN |

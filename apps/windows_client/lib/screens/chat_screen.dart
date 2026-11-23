@@ -63,6 +63,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Conversation? _active;
   List<ChatMessage> _messages = [];
   UsageSnapshot? _usage;
+  ImageLimits? _imageLimits;
   bool _busy = false;
   bool _streaming = false;
   bool _billingBusy = false;
@@ -134,10 +135,11 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _bootstrap() async {
     try {
       final convos = await _api.listConversations();
-      final usage = await _api.getUsage();
+      final usageRes = await _api.getUsage();
       setState(() {
         _conversations = convos.isEmpty ? _demoConversations() : convos;
-        _usage = usage;
+        _usage = usageRes.usage;
+        _imageLimits = usageRes.imageLimits;
         _error = null;
       });
       if (convos.isNotEmpty) {
@@ -302,26 +304,71 @@ class _ChatScreenState extends State<ChatScreen> {
     return parts.join('\n\n').trim();
   }
 
+  bool get _isPro =>
+      context.read<AuthService>().user?.isPro ??
+      (_usage?.planTier == 'pro');
+
+  int get _maxImagesPerMessage =>
+      _imageLimits?.maxImagesPerMessage ??
+      AttachmentReader.maxImagesForPlan(isPro: _isPro);
+
   Future<void> _addPaths(Iterable<String> paths) async {
-    final remaining =
-        AttachmentReader.maxAttachments - _attachments.length;
-    if (remaining <= 0) {
+    final maxPerMessage = _maxImagesPerMessage;
+    final currentImages =
+        _attachments.where((a) => a.kind == AttachmentKind.image).length;
+    final slotsLeft = maxPerMessage - _attachments.length;
+    if (slotsLeft <= 0) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Max ${AttachmentReader.maxAttachments} attachments per message',
+            'Max $maxPerMessage attachments per message on your plan',
           ),
         ),
       );
       return;
     }
 
-    final toLoad = paths.take(remaining).toList();
+    final usedToday = _usage?.imagesCount ?? 0;
+    final limitToday = _usage?.imagesLimit ??
+        (_imageLimits?.maxImagesPerDay ?? (_isPro ? 100 : 20));
+    final toLoad = paths.take(slotsLeft).toList();
     final loaded = <PendingAttachment>[];
+    var imagesAdded = 0;
     for (final path in toLoad) {
       try {
-        loaded.add(await AttachmentReader.fromPath(path));
+        final att = await AttachmentReader.fromPath(path);
+        if (att.kind == AttachmentKind.image) {
+          if (currentImages + imagesAdded >= maxPerMessage) {
+            loaded.add(
+              PendingAttachment(
+                id: 'lim_${DateTime.now().microsecondsSinceEpoch}',
+                path: path,
+                name: att.name,
+                kind: AttachmentKind.unsupported,
+                mimeType: att.mimeType,
+                notice:
+                    'Max $maxPerMessage images per message on your plan.',
+              ),
+            );
+            continue;
+          }
+          if (usedToday + currentImages + imagesAdded >= limitToday) {
+            loaded.add(
+              PendingAttachment(
+                id: 'day_${DateTime.now().microsecondsSinceEpoch}',
+                path: path,
+                name: att.name,
+                kind: AttachmentKind.unsupported,
+                mimeType: att.mimeType,
+                notice: 'Daily image upload quota reached.',
+              ),
+            );
+            continue;
+          }
+          imagesAdded += 1;
+        }
+        loaded.add(att);
       } catch (e) {
         loaded.add(
           PendingAttachment(
@@ -541,10 +588,11 @@ class _ChatScreenState extends State<ChatScreen> {
       await done.future;
       if (!mounted) return;
       try {
-        final usage = await _api.getUsage();
+        final usageRes = await _api.getUsage();
         final convos = await _api.listConversations();
         setState(() {
-          _usage = usage;
+          _usage = usageRes.usage;
+          _imageLimits = usageRes.imageLimits;
           _conversations = convos;
         });
       } catch (_) {/* ignore refresh errors after stream */}
@@ -569,9 +617,17 @@ class _ChatScreenState extends State<ChatScreen> {
   String _friendlyError(Object e) {
     if (e is ApiException) {
       if (e.isQuota) {
-        return e.code == 'token_soft_cap_exceeded'
-            ? 'Token soft-cap reached for today. Upgrade or try tomorrow.'
-            : 'Daily message quota reached. Upgrade to Pro for more.';
+        switch (e.code) {
+          case 'token_soft_cap_exceeded':
+            return 'Token soft-cap reached for today. Upgrade or try tomorrow.';
+          case 'image_quota_exceeded':
+            return 'Daily image upload quota reached. Upgrade to Pro for more.';
+          case 'too_many_images_per_message':
+            return 'Too many images in one message for your plan '
+                '(max $_maxImagesPerMessage).';
+          default:
+            return 'Daily message quota reached. Upgrade to Pro for more.';
+        }
       }
       if (e.isRateLimit) {
         return 'Too many requests — wait a moment and try again.';

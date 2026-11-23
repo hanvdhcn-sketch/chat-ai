@@ -76,14 +76,22 @@ class ApiClient {
         .toList();
   }
 
-  Future<UsageSnapshot> getUsage() async {
+  Future<UsageResponse> getUsage() async {
     final res = await _client.get(
       Uri.parse('${AppConfig.apiBaseUrl}/v1/usage'),
       headers: await _headers(),
     );
     _ensureOk(res);
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    return UsageSnapshot.fromJson(body['usage'] as Map<String, dynamic>);
+    final usage = UsageSnapshot.fromJson(body['usage'] as Map<String, dynamic>);
+    return UsageResponse(
+      usage: usage,
+      imageLimits: ImageLimits.fromJson(
+        body['imageLimits'] as Map<String, dynamic>?,
+        isPro: usage.planTier == 'pro',
+      ),
+      resetsAt: body['resetsAt'] as String?,
+    );
   }
 
   /// Sync Microsoft Store entitlement with the BFF (Collections / stub verify).
