@@ -8,6 +8,7 @@ import {
   monthResetsAtIso,
   monthlyImageSoftCapStatus,
   quotaResetsAtIso,
+  resolveQuotaPromptLocale,
 } from './quota-context.js';
 import type { UsageSnapshot } from '../types/index.js';
 
@@ -18,7 +19,7 @@ const freeUsage: UsageSnapshot = {
   messagesCount: 3,
   messagesLimit: 100,
   imagesCount: 2,
-  imagesLimit: 20,
+  imagesLimit: 10,
   monthImagesCount: 2,
   monthWindowStart: '2026-11-01T00:00:00.000Z',
   inputTokens: 0,
@@ -31,7 +32,7 @@ describe('quota-context', () => {
   it('reports Free image limits', () => {
     const lim = imageLimitsForPlan('free');
     assert.equal(lim.maxImagesPerMessage, 3);
-    assert.equal(lim.maxImagesPerDay, 20);
+    assert.equal(lim.maxImagesPerDay, 10);
     assert.equal(lim.maxImageBytes, 8 * 1024 * 1024);
   });
 
@@ -54,11 +55,38 @@ describe('quota-context', () => {
     assert.match(prompt, /Free/);
     assert.match(prompt, /100 daily limit/);
     assert.match(prompt, /97 remaining/);
-    assert.match(prompt, /20 images per day/);
+    assert.match(prompt, /10 images per day/);
+    assert.match(prompt, /ALWAYS reply in the same language/);
     assert.match(prompt, /never xAI\.com/);
     assert.match(prompt, /Grok\.com Premium/);
     assert.match(prompt, /not xAI\/Grok\.com|never .*SuperGrok|never xAI/i);
     assert.doesNotMatch(prompt, /soft-cap|monthly image allowance/i);
+  });
+
+  it('detects Vietnamese from latest user message', () => {
+    assert.equal(
+      resolveQuotaPromptLocale({ latestUserMessage: 'dịch tiếng việt' }),
+      'vi',
+    );
+    assert.equal(resolveQuotaPromptLocale({ locale: 'vi' }), 'vi');
+    assert.equal(
+      resolveQuotaPromptLocale({
+        locale: 'en',
+        latestUserMessage: 'how many messages left?',
+      }),
+      'en',
+    );
+  });
+
+  it('localizes quota system prompt to Vietnamese', () => {
+    const prompt = buildOrbitaQuotaSystemPrompt(freeUsage, 'free', {
+      latestUserMessage: 'dịch tiếng việt',
+    });
+    assert.match(prompt, /LUÔN trả lời bằng ngôn ngữ/);
+    assert.match(prompt, /Gói Orbita hiện tại: Miễn phí/);
+    assert.match(prompt, /10 ảnh\/ngày/);
+    assert.match(prompt, /không nêu xAI\.com/);
+    assert.doesNotMatch(prompt, /ALWAYS reply in the same language/);
   });
 
   it('activates Pro monthly image soft-cap at 200', () => {
@@ -70,7 +98,7 @@ describe('quota-context', () => {
   it('reduces Pro image limits to Free while soft-cap is active', () => {
     const lim = effectiveImageLimits('pro', { monthImagesCount: 200 });
     assert.equal(lim.maxImagesPerMessage, 3);
-    assert.equal(lim.maxImagesPerDay, 20);
+    assert.equal(lim.maxImagesPerDay, 10);
     const status = monthlyImageSoftCapStatus(
       {
         ...freeUsage,

@@ -140,6 +140,7 @@ class ApiClient {
     required String conversationId,
     required String content,
     String? model,
+    String? locale,
     List<Map<String, dynamic>>? attachments,
   }) {
     final controller = StreamController<Map<String, dynamic>>();
@@ -167,6 +168,7 @@ class ApiClient {
         request.body = jsonEncode({
           'content': content,
           if (model != null) 'model': model,
+          if (locale != null) 'locale': locale,
           if (attachments != null && attachments.isNotEmpty)
             'attachments': attachments,
         });

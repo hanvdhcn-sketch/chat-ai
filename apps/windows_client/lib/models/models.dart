@@ -82,7 +82,7 @@ class UsageSnapshot {
     required this.messagesLimit,
     required this.planTier,
     this.imagesCount = 0,
-    this.imagesLimit = 20,
+    this.imagesLimit = 10,
   });
 
   final int messagesCount;
@@ -98,12 +98,14 @@ class UsageSnapshot {
       (imagesLimit - imagesCount).clamp(0, imagesLimit);
 
   factory UsageSnapshot.fromJson(Map<String, dynamic> json) {
+    final plan = json['planTier'] as String? ?? 'free';
     return UsageSnapshot(
       messagesCount: json['messagesCount'] as int? ?? 0,
       messagesLimit: json['messagesLimit'] as int? ?? 100,
       imagesCount: json['imagesCount'] as int? ?? 0,
-      imagesLimit: json['imagesLimit'] as int? ?? 20,
-      planTier: json['planTier'] as String? ?? 'free',
+      imagesLimit:
+          json['imagesLimit'] as int? ?? (plan == 'pro' ? 20 : 10),
+      planTier: plan,
     );
   }
 }
@@ -124,7 +126,8 @@ class ImageLimits {
       maxImagesPerMessage:
           json?['maxImagesPerMessage'] as int? ?? (isPro ? 8 : 3),
       maxImageBytes: json?['maxImageBytes'] as int? ?? (8 * 1024 * 1024),
-      maxImagesPerDay: json?['maxImagesPerDay'] as int? ?? 20,
+      maxImagesPerDay:
+          json?['maxImagesPerDay'] as int? ?? (isPro ? 20 : 10),
     );
   }
 }

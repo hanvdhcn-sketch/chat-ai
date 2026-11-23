@@ -266,9 +266,9 @@ class _UpgradeCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
-                'Upgrade to Pro',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).upgradePro,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                   fontSize: 14.5,

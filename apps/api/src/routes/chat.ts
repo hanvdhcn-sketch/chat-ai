@@ -39,6 +39,8 @@ const streamBody = z
   .object({
     content: z.string().max(16_000).default(''),
     model: z.enum(['grok-fast', 'grok']).optional(),
+    /** Optional UI locale hint (e.g. vi / en) for quota system prompt. */
+    locale: z.string().min(2).max(16).optional(),
     attachments: z.array(attachmentSchema).max(maxAttachmentsInBody).optional(),
   })
   .superRefine((val, ctx) => {
@@ -170,6 +172,10 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
       const quotaSystemPrompt = buildOrbitaQuotaSystemPrompt(
         quota.usage,
         user.planTier,
+        {
+          locale: parsed.data.locale ?? user.locale,
+          latestUserMessage: parsed.data.content,
+        },
       );
       const gatewayMessages = toGatewayMessages(
         history,
