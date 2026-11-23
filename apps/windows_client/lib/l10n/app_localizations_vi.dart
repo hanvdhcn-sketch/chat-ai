@@ -49,7 +49,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get proQuotaHint =>
-      'Pro: 400 tin/ngày · tối đa 5 ảnh/tin (8 MB), 100 ảnh/ngày';
+      'Pro: 400 tin/ngày · tối đa 10 ảnh/tin (8 MB), 25 ảnh/ngày';
 
   @override
   String get conversations => 'Hội thoại';
