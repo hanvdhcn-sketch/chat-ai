@@ -74,4 +74,15 @@ describe('attachments', () => {
     const atts = sanitizeAttachments(raw, 'pro');
     assert.equal(atts.filter((a) => a.kind === 'image').length, 8);
   });
+
+  it('caps Pro to Free image rates after monthly soft-cap', () => {
+    const raw = Array.from({ length: 6 }, (_, n) => ({
+      name: `i${n}.png`,
+      mimeType: 'image/png' as const,
+      kind: 'image' as const,
+      dataBase64: 'abc',
+    }));
+    const atts = sanitizeAttachments(raw, 'pro', { monthImagesCount: 200 });
+    assert.equal(atts.filter((a) => a.kind === 'image').length, 3);
+  });
 });

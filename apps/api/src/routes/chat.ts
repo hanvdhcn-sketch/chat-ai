@@ -96,6 +96,7 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
       const attachments = sanitizeAttachments(
         parsed.data.attachments,
         user.planTier,
+        quota.usage,
       );
       const imageCount = countImageAttachments(attachments);
       const imageQuota = checkImageQuota(user, imageCount);

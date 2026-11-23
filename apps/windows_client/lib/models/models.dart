@@ -129,16 +129,42 @@ class ImageLimits {
   }
 }
 
+class MonthlyImageSoftCap {
+  MonthlyImageSoftCap({
+    required this.active,
+    required this.resetsAt,
+    this.monthImagesCount = 0,
+    this.softCap = 200,
+  });
+
+  final bool active;
+  final String resetsAt;
+  final int monthImagesCount;
+  final int softCap;
+
+  factory MonthlyImageSoftCap.fromJson(Map<String, dynamic>? json) {
+    return MonthlyImageSoftCap(
+      active: json?['active'] as bool? ?? false,
+      resetsAt: json?['resetsAt'] as String? ?? '',
+      monthImagesCount: json?['monthImagesCount'] as int? ?? 0,
+      softCap: json?['softCap'] as int? ?? 200,
+    );
+  }
+}
+
 class UsageResponse {
   UsageResponse({
     required this.usage,
     required this.imageLimits,
     this.resetsAt,
+    this.monthlyImageSoftCap,
   });
 
   final UsageSnapshot usage;
   final ImageLimits imageLimits;
   final String? resetsAt;
+  /// Present only when Pro monthly soft-cap is already active.
+  final MonthlyImageSoftCap? monthlyImageSoftCap;
 }
 
 class StoreProduct {

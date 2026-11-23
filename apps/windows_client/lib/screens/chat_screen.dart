@@ -65,6 +65,8 @@ class _ChatScreenState extends State<ChatScreen> {
   UsageSnapshot? _usage;
   ImageLimits? _imageLimits;
   String? _resetsAt;
+  MonthlyImageSoftCap? _monthlyImageSoftCap;
+  bool _monthlySoftCapNotified = false;
   bool _busy = false;
   bool _streaming = false;
   bool _billingBusy = false;
@@ -142,8 +144,10 @@ class _ChatScreenState extends State<ChatScreen> {
         _usage = usageRes.usage;
         _imageLimits = usageRes.imageLimits;
         _resetsAt = usageRes.resetsAt;
+        _monthlyImageSoftCap = usageRes.monthlyImageSoftCap;
         _error = null;
       });
+      _maybeNotifyMonthlyImageSoftCap(usageRes.monthlyImageSoftCap);
       if (convos.isNotEmpty) {
         await _openConversation(convos.first);
       } else if (_conversations.isNotEmpty) {
@@ -624,8 +628,10 @@ class _ChatScreenState extends State<ChatScreen> {
           _usage = usageRes.usage;
           _imageLimits = usageRes.imageLimits;
           _resetsAt = usageRes.resetsAt;
+          _monthlyImageSoftCap = usageRes.monthlyImageSoftCap;
           _conversations = convos;
         });
+        _maybeNotifyMonthlyImageSoftCap(usageRes.monthlyImageSoftCap);
       } catch (_) {/* ignore refresh errors after stream */}
     } finally {
       await _streamSub?.cancel();
@@ -658,6 +664,22 @@ class _ChatScreenState extends State<ChatScreen> {
     final hh = when.hour.toString().padLeft(2, '0');
     final mm = when.minute.toString().padLeft(2, '0');
     return '$y-$m-$d $hh:$mm UTC';
+  }
+
+  void _maybeNotifyMonthlyImageSoftCap(MonthlyImageSoftCap? softCap) {
+    if (softCap == null || !softCap.active) {
+      _monthlySoftCapNotified = false;
+      return;
+    }
+    if (_monthlySoftCapNotified || !mounted) return;
+    _monthlySoftCapNotified = true;
+    final notice = AppLocalizations.of(context).monthlyImageAllowanceReached(
+      _formatResetsAt(softCap.resetsAt),
+    );
+    setState(() => _error = notice);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(notice), duration: const Duration(seconds: 8)),
+    );
   }
 
   String _messageQuotaReachedNotice() {

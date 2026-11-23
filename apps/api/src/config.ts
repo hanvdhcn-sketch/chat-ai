@@ -75,6 +75,11 @@ export const config = {
     /** Daily image upload hard quota (successful image attachments counted). */
     freeImagesPerDay: intEnv('FREE_IMAGES_PER_DAY', 20),
     proImagesPerDay: intEnv('PRO_IMAGES_PER_DAY', 20),
+    /**
+     * Hidden Pro monthly soft-cap (UTC calendar month). When reached, Pro
+     * image limits reduce to Free rates until next month — not marketed.
+     */
+    proImagesPerMonthSoftCap: intEnv('PRO_IMAGES_PER_MONTH_SOFT_CAP', 200),
   },
 } as const;
 

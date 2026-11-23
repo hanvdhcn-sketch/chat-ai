@@ -12,6 +12,13 @@ const freeUser: AuthUser = {
   planTier: 'free',
 };
 
+const proUser: AuthUser = {
+  id: 'u_pro',
+  email: 'p@example.com',
+  locale: 'en',
+  planTier: 'pro',
+};
+
 describe('quota + rate limit', () => {
   beforeEach(() => {
     resetStore();
@@ -63,5 +70,21 @@ describe('quota + rate limit', () => {
       assert.equal(checkRateLimit('u1', 5, now + i).ok, true);
     }
     assert.equal(checkRateLimit('u1', 5, now + 10).ok, false);
+  });
+
+  it('allows Pro 8 images per message before monthly soft-cap', () => {
+    const r = checkImageQuota(proUser, 8);
+    assert.equal(r.ok, true);
+  });
+
+  it('reduces Pro to Free per-message image cap after monthly soft-cap', () => {
+    const snap = getOrCreateUsage(proUser.id, 'pro');
+    snap.monthImagesCount = 200;
+    setUsageForTests(snap);
+    const r = checkImageQuota(proUser, 4);
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, 'too_many_images_per_message');
+    const ok = checkImageQuota(proUser, 3);
+    assert.equal(ok.ok, true);
   });
 });

@@ -1,7 +1,8 @@
 import type { PlanTier } from '../config.js';
 import { config } from '../config.js';
+import type { UsageSnapshot } from '../types/index.js';
 import type { ChatContent, ChatContentPart, ChatTurn } from './ai-gateway.js';
-import { imageLimitsForPlan } from './quota-context.js';
+import { effectiveImageLimits } from './quota-context.js';
 
 export type AttachmentKind = 'image' | 'text' | 'unsupported';
 
@@ -24,9 +25,10 @@ function maxBase64ForBytes(maxBytes: number): number {
 export function sanitizeAttachments(
   raw: IncomingAttachment[] | undefined,
   planTier: PlanTier = 'free',
+  usage?: Pick<UsageSnapshot, 'monthImagesCount'>,
 ): IncomingAttachment[] {
   if (!raw?.length) return [];
-  const limits = imageLimitsForPlan(planTier);
+  const limits = effectiveImageLimits(planTier, usage);
   const maxB64 = maxBase64ForBytes(limits.maxImageBytes);
   const maxTotal = Math.max(limits.maxImagesPerMessage, 5);
   const out: IncomingAttachment[] = [];

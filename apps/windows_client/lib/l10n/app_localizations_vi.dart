@@ -62,6 +62,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String monthlyImageAllowanceReached(String resetsAt) {
+    return 'Bạn đã hết hạn mức ảnh trong tháng. Tải ảnh tạm thời theo hạn mức Miễn phí (3 ảnh/tin, 20 ảnh/ngày) đến $resetsAt. Chat văn bản không bị ảnh hưởng.';
+  }
+
+  @override
   String get conversations => 'Hội thoại';
 
   @override

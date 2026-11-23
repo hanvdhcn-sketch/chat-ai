@@ -188,6 +188,12 @@ abstract class AppLocalizations {
   /// **'Daily image upload limit reached. Wait until the next day reset ({resetsAt}) to upload more.'**
   String imageQuotaReached(String resetsAt);
 
+  /// No description provided for @monthlyImageAllowanceReached.
+  ///
+  /// In en, this message translates to:
+  /// **'You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 20 per day) until {resetsAt}. Text chat is unaffected.'**
+  String monthlyImageAllowanceReached(String resetsAt);
+
   /// No description provided for @conversations.
   ///
   /// In en, this message translates to:

@@ -30,6 +30,12 @@
       "resetsAt": { "type": "String" }
     }
   },
+  "monthlyImageAllowanceReached": "You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 20 per day) until {resetsAt}. Text chat is unaffected.",
+  "@monthlyImageAllowanceReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
   "conversations": "Conversations",
   "settings": "Settings",
   "language": "Language",

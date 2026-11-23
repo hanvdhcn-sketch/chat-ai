@@ -62,6 +62,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String monthlyImageAllowanceReached(String resetsAt) {
+    return "You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 20 per day) until $resetsAt. Text chat is unaffected.";
+  }
+
+  @override
   String get conversations => 'Conversations';
 
   @override

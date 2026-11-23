@@ -30,6 +30,12 @@
       "resetsAt": { "type": "String" }
     }
   },
+  "monthlyImageAllowanceReached": "Bạn đã hết hạn mức ảnh trong tháng. Tải ảnh tạm thời theo hạn mức Miễn phí (3 ảnh/tin, 20 ảnh/ngày) đến {resetsAt}. Chat văn bản không bị ảnh hưởng.",
+  "@monthlyImageAllowanceReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
   "conversations": "Hội thoại",
   "settings": "Cài đặt",
   "language": "Ngôn ngữ",

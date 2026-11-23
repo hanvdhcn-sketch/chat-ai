@@ -66,6 +66,13 @@ export interface UsageSnapshot {
   /** Successful image attachments uploaded today. */
   imagesCount: number;
   imagesLimit: number;
+  /**
+   * Successful image attachments in the current UTC calendar month.
+   * Survives daily window rollover; resets on month change.
+   */
+  monthImagesCount?: number;
+  /** UTC month window start (YYYY-MM-01T00:00:00.000Z). */
+  monthWindowStart?: string;
   inputTokens: number;
   outputTokens: number;
   tokenSoftCap: number;
