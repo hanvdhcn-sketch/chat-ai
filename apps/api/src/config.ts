@@ -30,6 +30,22 @@ export const config = {
   ai: {
     xaiApiKey: process.env.XAI_API_KEY ?? '',
     xaiBaseUrl: process.env.XAI_BASE_URL ?? 'https://api.x.ai/v1',
+    /**
+     * Web search for chat:
+     * - xai (default): Responses API built-in `web_search` (XAI_API_KEY only)
+     * - local: client-side tool loop via DuckDuckGo (or Brave if BRAVE_SEARCH_API_KEY)
+     * - off: no live search
+     */
+    webSearchMode: (() => {
+      const raw = (process.env.XAI_WEB_SEARCH_MODE ?? 'xai').toLowerCase();
+      if (raw === 'off' || raw === 'false' || raw === '0') return 'off' as const;
+      if (raw === 'local') return 'local' as const;
+      return 'xai' as const;
+    })(),
+    /** Overall timeout for a search-enabled vendor request (ms). */
+    webSearchTimeoutMs: intEnv('WEB_SEARCH_TIMEOUT_MS', 90_000),
+    /** Max local tool-calling rounds per user message. */
+    webSearchMaxToolRounds: intEnv('WEB_SEARCH_MAX_TOOL_ROUNDS', 3),
   },
 
   /**

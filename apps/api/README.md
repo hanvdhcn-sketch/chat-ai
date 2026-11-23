@@ -50,12 +50,16 @@ Dev token: `Bearer stub:user_demo:free` or `stub:user_demo:pro`.
 
 - Free → `grok-fast` only (quota-limited)
 - Pro → `grok` (default) or `grok-fast`
-- With `XAI_API_KEY`: streams from xAI (`/chat/completions`)
+- With `XAI_API_KEY`: streams from xAI
+- **Web search (default on):** xAI Responses API built-in `web_search` (`XAI_WEB_SEARCH_MODE=xai`) — automatic; only `XAI_API_KEY` required
+- Fallback / local: `XAI_WEB_SEARCH_MODE=local` runs a `web_search` function-tool loop (DuckDuckGo free; optional `BRAVE_SEARCH_API_KEY`)
+- Disable: `XAI_WEB_SEARCH_MODE=off`
+- Web search counts as a normal message against Free/Pro quotas
 - Missing key → deterministic stub stream (no crash)
 - No Gemini / Anthropic / multi-model picker; Cursor is not a runtime
 
 ```bash
-npm run test -w @chatai/api   # mock-HTTP gateway + quota + Store entitlement tests
+npm run test -w @chatai/api   # mock-HTTP gateway + web search + quota + Store entitlement tests
 ```
 
 ## Storage

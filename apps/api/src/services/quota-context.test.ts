@@ -57,6 +57,8 @@ describe('quota-context', () => {
     assert.match(prompt, /97 remaining/);
     assert.match(prompt, /10 images per day/);
     assert.match(prompt, /ALWAYS reply in the same language/);
+    assert.match(prompt, /search the live web via tools/i);
+    assert.match(prompt, /Web search counts as a normal Orbita chat message/);
     assert.match(prompt, /never xAI\.com/);
     assert.match(prompt, /Grok\.com Premium/);
     assert.match(prompt, /not xAI\/Grok\.com|never .*SuperGrok|never xAI/i);
@@ -83,6 +85,7 @@ describe('quota-context', () => {
       latestUserMessage: 'dịch tiếng việt',
     });
     assert.match(prompt, /LUÔN trả lời bằng ngôn ngữ/);
+    assert.match(prompt, /tìm kiếm web qua công cụ/i);
     assert.match(prompt, /Gói Orbita hiện tại: Miễn phí/);
     assert.match(prompt, /10 ảnh\/ngày/);
     assert.match(prompt, /không nêu xAI\.com/);

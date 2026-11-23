@@ -19,6 +19,9 @@ async function collect(
     stub?: boolean;
     error?: string;
     vendor?: string;
+    webSearch?: boolean;
+    inputTokens?: number;
+    outputTokens?: number;
   }>,
 ) {
   const out: Array<Record<string, unknown>> = [];
@@ -86,7 +89,7 @@ describe('streamCompletion', () => {
           model: 'grok',
           messages: [{ role: 'user', content: 'hi' }],
         },
-        { fetchFn, xaiApiKey: 'test-xai' },
+        { fetchFn, xaiApiKey: 'test-xai', webSearchMode: 'off' },
       ),
     );
 
@@ -112,11 +115,184 @@ describe('streamCompletion', () => {
           model: 'grok',
           messages: [{ role: 'user', content: 'hi' }],
         },
-        { fetchFn, xaiApiKey: 'xai' },
+        { fetchFn, xaiApiKey: 'xai', webSearchMode: 'off' },
       ),
     );
 
     assert.ok(chunks.some((c) => c.type === 'error'));
     assert.match(String(chunks.find((c) => c.type === 'error')?.error), /xai_http/);
+  });
+
+  it('streams Responses API text deltas when webSearchMode=xai', async () => {
+    const fetchFn: typeof fetch = async (input) => {
+      assert.match(String(input), /\/responses$/);
+      return sseResponse([
+        JSON.stringify({
+          type: 'response.output_text.delta',
+          delta: 'It is ',
+        }),
+        JSON.stringify({
+          type: 'response.output_text.delta',
+          delta: '14:30 in Vietnam.',
+        }),
+        JSON.stringify({
+          type: 'response.completed',
+          response: {
+            usage: { input_tokens: 40, output_tokens: 8 },
+          },
+        }),
+        '[DONE]',
+      ]);
+    };
+
+    const chunks = await collect(
+      streamCompletion(
+        {
+          planTier: 'pro',
+          model: 'grok',
+          messages: [{ role: 'user', content: 'What time is it in Vietnam?' }],
+        },
+        { fetchFn, xaiApiKey: 'test-xai', webSearchMode: 'xai' },
+      ),
+    );
+
+    const text = chunks
+      .filter((c) => c.type === 'delta')
+      .map((c) => c.text)
+      .join('');
+    assert.equal(text, 'It is 14:30 in Vietnam.');
+    const meta = chunks.find((c) => c.type === 'meta');
+    assert.equal(meta?.webSearch, true);
+    const done = chunks.find((c) => c.type === 'done');
+    assert.equal(done?.inputTokens, 40);
+    assert.equal(done?.outputTokens, 8);
+  });
+
+  it('runs local web_search tool loop with mocked search', async () => {
+    let chatCalls = 0;
+    const fetchFn: typeof fetch = async (input, init) => {
+      const url = String(input);
+      assert.match(url, /\/chat\/completions$/);
+      chatCalls += 1;
+      const body = JSON.parse(String(init?.body ?? '{}')) as {
+        tools?: unknown[];
+        messages?: Array<{ role?: string }>;
+      };
+
+      if (chatCalls === 1) {
+        assert.ok(body.tools?.length);
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                finish_reason: 'tool_calls',
+                message: {
+                  role: 'assistant',
+                  content: null,
+                  tool_calls: [
+                    {
+                      id: 'call_1',
+                      type: 'function',
+                      function: {
+                        name: 'web_search',
+                        arguments: JSON.stringify({
+                          query: 'current time Vietnam',
+                        }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            usage: { prompt_tokens: 20, completion_tokens: 5 },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+
+      // Second round: model answers with tool results in history.
+      assert.ok(body.messages?.some((m) => m.role === 'tool'));
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: {
+                role: 'assistant',
+                content: 'Bây giờ ở Việt Nam khoảng 14:30.',
+              },
+            },
+          ],
+          usage: { prompt_tokens: 80, completion_tokens: 12 },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    };
+
+    const webSearchFn = async (query: string) => {
+      assert.match(query, /Vietnam|Việt/i);
+      return [
+        {
+          title: 'Time in Vietnam',
+          url: 'https://example.com/vn-time',
+          snippet: 'Current local time in Vietnam is 14:30 ICT.',
+        },
+      ];
+    };
+
+    const chunks = await collect(
+      streamCompletion(
+        {
+          planTier: 'free',
+          messages: [{ role: 'user', content: 'Bây giờ ở Việt Nam mấy giờ?' }],
+        },
+        {
+          fetchFn,
+          xaiApiKey: 'test-xai',
+          webSearchMode: 'local',
+          webSearchFn,
+        },
+      ),
+    );
+
+    const text = chunks
+      .filter((c) => c.type === 'delta')
+      .map((c) => c.text)
+      .join('');
+    assert.match(text, /14:30/);
+    assert.equal(chatCalls, 2);
+    assert.equal(chunks.find((c) => c.type === 'done')?.webSearch, true);
+  });
+
+  it('skips tools when webSearchMode=off', async () => {
+    const fetchFn: typeof fetch = async (input, init) => {
+      assert.match(String(input), /\/chat\/completions$/);
+      const body = JSON.parse(String(init?.body ?? '{}')) as {
+        tools?: unknown;
+        stream?: boolean;
+      };
+      assert.equal(body.tools, undefined);
+      assert.equal(body.stream, true);
+      return sseResponse([
+        JSON.stringify({ choices: [{ delta: { content: 'ok' } }] }),
+        '[DONE]',
+      ]);
+    };
+
+    const chunks = await collect(
+      streamCompletion(
+        {
+          planTier: 'pro',
+          model: 'grok',
+          messages: [{ role: 'user', content: 'hi' }],
+        },
+        { fetchFn, xaiApiKey: 'test-xai', webSearchMode: 'off' },
+      ),
+    );
+    assert.equal(
+      chunks.filter((c) => c.type === 'delta').map((c) => c.text).join(''),
+      'ok',
+    );
+    assert.equal(chunks.find((c) => c.type === 'meta')?.webSearch, false);
   });
 });
