@@ -224,10 +224,21 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       _scrollToEnd();
     } catch (e) {
+      final stale = e is ApiException && e.isNotFound;
       setState(() {
         _error = _friendlyError(e);
         _busy = false;
+        if (stale) {
+          _conversations =
+              _conversations.where((x) => x.id != c.id).toList();
+          _active = null;
+          _messages = [];
+          _showSample = false;
+        }
       });
+      if (stale) {
+        await _newChat();
+      }
     }
   }
 
@@ -551,6 +562,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     _cancelStream = stream.cancel;
 
+    var staleConversation = false;
     try {
       final done = Completer<void>();
       _streamSub = stream.events.listen(
@@ -592,17 +604,21 @@ class _ChatScreenState extends State<ChatScreen> {
               _messages.last.model = event['model'] as String?;
             });
           } else if (type == 'error') {
+            final errCode = event['error'] as String? ?? 'stream error';
+            final friendly = _friendlyErrorCode(errCode);
             setState(() {
               _messages.last.status = 'error';
               if (_messages.last.content.isEmpty) {
-                _messages.last.content =
-                    event['error'] as String? ?? 'stream error';
+                _messages.last.content = friendly;
               }
-              _error = event['error'] as String? ?? _error;
+              _error = friendly;
             });
           }
         },
         onError: (Object e) {
+          if (e is ApiException && e.isNotFound) {
+            staleConversation = true;
+          }
           setState(() {
             _error = _friendlyError(e);
             if (_messages.isNotEmpty && _messages.last.role == 'assistant') {
@@ -622,6 +638,34 @@ class _ChatScreenState extends State<ChatScreen> {
 
       await done.future;
       if (!mounted) return;
+
+      if (staleConversation) {
+        final staleId = conversation.id;
+        setState(() {
+          _conversations =
+              _conversations.where((c) => c.id != staleId).toList();
+          // Drop the failed optimistic turn; user can resend on a fresh chat.
+          if (_messages.length >= 2 &&
+              _messages[_messages.length - 1].role == 'assistant' &&
+              _messages[_messages.length - 2].role == 'user') {
+            _messages = _messages.sublist(0, _messages.length - 2);
+          }
+          _input.text = text;
+          for (final a in pending) {
+            if (!_attachments.any((x) => x.path == a.path)) {
+              _attachments.add(a);
+            }
+          }
+        });
+        await _newChat();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_friendlyErrorCode('not_found'))),
+          );
+        }
+        return;
+      }
+
       try {
         final usageRes = await _api.getUsage();
         final convos = await _api.listConversations();
@@ -699,8 +743,27 @@ class _ChatScreenState extends State<ChatScreen> {
     return AppLocalizations.of(context).imageQuotaReached(_formatResetsAt());
   }
 
+  String _friendlyErrorCode(String? code) {
+    switch (code) {
+      case 'not_found':
+        return 'This chat is no longer on the server (API may have restarted). '
+            'A new chat is ready — send again.';
+      case 'invalid_body':
+        return 'Could not send that message. Check your text or attachments.';
+      case 'aborted':
+        return 'Stopped.';
+      case 'stream_failed':
+        return 'The reply stream failed. Try again.';
+      default:
+        return code ?? 'Something went wrong.';
+    }
+  }
+
   String _friendlyError(Object e) {
     if (e is ApiException) {
+      if (e.isNotFound) {
+        return _friendlyErrorCode('not_found');
+      }
       if (e.isQuota) {
         switch (e.code) {
           case 'token_soft_cap_exceeded':
@@ -718,7 +781,15 @@ class _ChatScreenState extends State<ChatScreen> {
       if (e.isRateLimit) {
         return 'Too many requests — wait a moment and try again.';
       }
-      return e.code ?? e.toString();
+      switch (e.code) {
+        case 'invalid_body':
+        case 'aborted':
+        case 'stream_failed':
+        case 'not_found':
+          return _friendlyErrorCode(e.code);
+        default:
+          return e.code ?? e.toString();
+      }
     }
     return e.toString();
   }
