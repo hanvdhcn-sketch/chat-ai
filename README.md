@@ -93,7 +93,7 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 | Messages/day | 60 | 400 |
 | Images/message | 3 (≤5 MB each) | 8 (≤8 MB each) |
 | Images/day | 8 | 20 |
-| Models | Grok Fast (quota-limited) | Grok (full API) |
+| Models | Grok Fast (`grok-4.3`, lighter/cheaper) | Grok (`grok-4.7`, stronger) |
 | Branding | “Powered by Orbita” badge | Hidden |
 | UI languages | VI + EN | VI + EN |
 

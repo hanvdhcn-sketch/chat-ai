@@ -5,6 +5,7 @@ import {
   isGrokModel,
   resolveModel,
   vendorModelId,
+  vendorReasoningExtras,
   vendorVisionModelId,
 } from './model-catalog.js';
 import {
@@ -281,6 +282,7 @@ async function* streamXaiResponses(opts: {
   enableWebSearch: boolean;
 }): AsyncGenerator<StreamChunk> {
   const apiModel = vendorModelForMessages(opts.model, opts.messages);
+  const reasoning = vendorReasoningExtras(opts.model, apiModel);
   const url = `${opts.keys.xaiBaseUrl.replace(/\/$/, '')}/responses`;
   const timeoutMs = config.ai.webSearchTimeoutMs;
   const ctrl = new AbortController();
@@ -301,6 +303,7 @@ async function* streamXaiResponses(opts: {
         model: apiModel,
         stream: true,
         input: toResponsesInput(opts.messages),
+        ...(reasoning.responses ?? {}),
         ...(opts.enableWebSearch
           ? { tools: [{ type: 'web_search' }] }
           : {}),
@@ -453,6 +456,7 @@ async function* streamXaiWithLocalTools(opts: {
   enableTools: boolean;
 }): AsyncGenerator<StreamChunk> {
   const apiModel = vendorModelForMessages(opts.model, opts.messages);
+  const reasoning = vendorReasoningExtras(opts.model, apiModel);
   const url = `${opts.keys.xaiBaseUrl.replace(/\/$/, '')}/chat/completions`;
   const maxRounds = opts.deps.maxToolRounds ?? config.ai.webSearchMaxToolRounds;
   const searchFn: WebSearchFn =
@@ -493,6 +497,7 @@ async function* streamXaiWithLocalTools(opts: {
         model: apiModel,
         stream: false,
         messages: loopMessages,
+        ...(reasoning.chatCompletions ?? {}),
         ...(opts.enableTools ? { tools: [WEB_SEARCH_TOOL], tool_choice: 'auto' } : {}),
       }),
       signal: opts.abortSignal,
@@ -609,6 +614,7 @@ async function* streamXaiChatCompletions(opts: {
   overrideMessages?: LoopMessage[];
 }): AsyncGenerator<StreamChunk> {
   const apiModel = vendorModelForMessages(opts.model, opts.messages);
+  const reasoning = vendorReasoningExtras(opts.model, apiModel);
   const url = `${opts.keys.xaiBaseUrl.replace(/\/$/, '')}/chat/completions`;
   const res = await opts.fetchFn(url, {
     method: 'POST',
@@ -621,6 +627,7 @@ async function* streamXaiChatCompletions(opts: {
       model: apiModel,
       stream: true,
       messages: opts.overrideMessages ?? toOpenAiMessages(opts.messages),
+      ...(reasoning.chatCompletions ?? {}),
     }),
     signal: opts.abortSignal,
   });

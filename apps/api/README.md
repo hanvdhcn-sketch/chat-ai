@@ -48,8 +48,9 @@ Dev token: `Bearer stub:user_demo:free` or `stub:user_demo:pro`.
 
 ## AI gateway
 
-- Free → `grok-fast` only (quota-limited)
-- Pro → `grok` (default) or `grok-fast`
+- Free → `grok-fast` only → vendor `grok-4.3` (lighter/cheaper; reasoning off)
+- Pro → `grok` (default) → vendor `grok-4.7` (stronger); or `grok-fast` when requested
+- Free and Pro do **not** share the same chat model
 - With `XAI_API_KEY`: streams from xAI
 - **Web search (default on):** xAI Responses API built-in `web_search` (`XAI_WEB_SEARCH_MODE=xai`) — automatic; only `XAI_API_KEY` required
 - Fallback / local: `XAI_WEB_SEARCH_MODE=local` runs a `web_search` function-tool loop (DuckDuckGo free; optional `BRAVE_SEARCH_API_KEY`)

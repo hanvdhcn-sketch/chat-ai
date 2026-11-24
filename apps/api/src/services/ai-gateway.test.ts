@@ -4,6 +4,8 @@ import { resolveModel, streamCompletion } from './ai-gateway.js';
 import {
   coerceModelId,
   fallbackModel,
+  vendorModelId,
+  vendorReasoningExtras,
   vendorVisionModelId,
 } from './model-catalog.js';
 
@@ -56,6 +58,31 @@ describe('resolveModel', () => {
     assert.equal(coerceModelId('gemini-pro'), 'grok-fast');
     assert.equal(coerceModelId('grok'), 'grok');
   });
+
+  it('maps Free to cheaper grok-4.3 and Pro to stronger grok-4.7', () => {
+    const prevFast = process.env.XAI_GROK_FAST_MODEL;
+    const prevPro = process.env.XAI_GROK_MODEL;
+    try {
+      delete process.env.XAI_GROK_FAST_MODEL;
+      delete process.env.XAI_GROK_MODEL;
+      assert.equal(vendorModelId('grok-fast'), 'grok-4.3');
+      assert.equal(vendorModelId('grok'), 'grok-4.7');
+      assert.notEqual(vendorModelId('grok-fast'), vendorModelId('grok'));
+    } finally {
+      if (prevFast === undefined) delete process.env.XAI_GROK_FAST_MODEL;
+      else process.env.XAI_GROK_FAST_MODEL = prevFast;
+      if (prevPro === undefined) delete process.env.XAI_GROK_MODEL;
+      else process.env.XAI_GROK_MODEL = prevPro;
+    }
+  });
+
+  it('disables reasoning only for Free grok-4.3 text chats', () => {
+    const free = vendorReasoningExtras('grok-fast', 'grok-4.3');
+    assert.equal(free.chatCompletions?.reasoning_effort, 'none');
+    assert.equal(free.responses?.reasoning.effort, 'none');
+    assert.deepEqual(vendorReasoningExtras('grok', 'grok-4.7'), {});
+    assert.deepEqual(vendorReasoningExtras('grok-fast', 'grok-4.7'), {});
+  });
 });
 
 describe('streamCompletion', () => {
@@ -106,6 +133,40 @@ describe('streamCompletion', () => {
     assert.equal(done?.vendor, 'xai');
     assert.equal(done?.inputTokens, 3);
     assert.equal(done?.outputTokens, 2);
+  });
+
+  it('sends Free text chats to grok-4.3 with reasoning_effort none', async () => {
+    const prevFast = process.env.XAI_GROK_FAST_MODEL;
+    const prevPro = process.env.XAI_GROK_MODEL;
+    delete process.env.XAI_GROK_FAST_MODEL;
+    delete process.env.XAI_GROK_MODEL;
+    let seen: { model?: string; reasoning_effort?: string } = {};
+    try {
+      const fetchFn: typeof fetch = async (_input, init) => {
+        seen = JSON.parse(String(init?.body ?? '{}')) as typeof seen;
+        return sseResponse([
+          JSON.stringify({ choices: [{ delta: { content: 'ok' } }] }),
+          '[DONE]',
+        ]);
+      };
+      const chunks = await collect(
+        streamCompletion(
+          {
+            planTier: 'free',
+            messages: [{ role: 'user', content: 'hi' }],
+          },
+          { fetchFn, xaiApiKey: 'test-xai', webSearchMode: 'off' },
+        ),
+      );
+      assert.equal(seen.model, 'grok-4.3');
+      assert.equal(seen.reasoning_effort, 'none');
+      assert.equal(chunks.find((c) => c.type === 'done')?.model, 'grok-fast');
+    } finally {
+      if (prevFast === undefined) delete process.env.XAI_GROK_FAST_MODEL;
+      else process.env.XAI_GROK_FAST_MODEL = prevFast;
+      if (prevPro === undefined) delete process.env.XAI_GROK_MODEL;
+      else process.env.XAI_GROK_MODEL = prevPro;
+    }
   });
 
   it('returns error when Grok HTTP fails (no Gemini fallback)', async () => {
