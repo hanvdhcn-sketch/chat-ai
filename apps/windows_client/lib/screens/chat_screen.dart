@@ -297,6 +297,7 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  /// Text shown in the bubble (images render as thumbnails, not placeholders).
   String _composeDisplayContent(
     String text,
     List<PendingAttachment> attachments,
@@ -305,7 +306,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.trim().isNotEmpty) parts.add(text.trim());
     for (final a in attachments) {
       if (a.kind == AttachmentKind.image) {
-        parts.add('[Attached image: ${a.name}]');
+        // Thumbnails carry the image; keep only an optional size/notice note.
         if (a.notice != null) parts.add('(${a.notice})');
       } else if (a.kind == AttachmentKind.text && a.text != null) {
         parts.add('--- Attached file: ${a.name} ---');
@@ -319,6 +320,22 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
     return parts.join('\n\n').trim();
+  }
+
+  List<MessageImageThumb> _thumbsFromAttachments(
+    List<PendingAttachment> attachments,
+  ) {
+    return attachments
+        .where((a) => a.kind == AttachmentKind.image)
+        .map(
+          (a) => MessageImageThumb(
+            name: a.name,
+            bytes: a.imageBytes,
+            path: a.path,
+            mimeType: a.mimeType,
+          ),
+        )
+        .toList(growable: false);
   }
 
   bool get _isPro =>
@@ -484,6 +501,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     final displayContent = _composeDisplayContent(text, pending);
+    final displayImages = _thumbsFromAttachments(sendable);
     final attachmentPayload =
         sendable.map((a) => a.toApiJson()).toList(growable: false);
 
@@ -502,6 +520,7 @@ class _ChatScreenState extends State<ChatScreen> {
               id: 'local_user',
               role: 'user',
               content: displayContent,
+              images: displayImages,
             ),
             ChatMessage(
               id: 'local_assistant',
@@ -547,6 +566,7 @@ class _ChatScreenState extends State<ChatScreen> {
           id: 'local_user',
           role: 'user',
           content: displayContent,
+          images: displayImages,
         ),
         ChatMessage(
           id: 'local_assistant',
@@ -583,6 +603,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   id: uid,
                   role: 'user',
                   content: displayContent,
+                  images: displayImages,
                 );
               }
               if (aid != null && _messages.isNotEmpty) {

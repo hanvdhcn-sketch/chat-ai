@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -18,7 +20,12 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
-    if (isUser) return _UserBubble(content: message.content);
+    if (isUser) {
+      return _UserBubble(
+        content: message.content,
+        images: message.images,
+      );
+    }
     return _AssistantBlock(
       content: message.content.isEmpty && message.status == 'streaming'
           ? '…'
@@ -30,12 +37,19 @@ class MessageBubble extends StatelessWidget {
 }
 
 class _UserBubble extends StatelessWidget {
-  const _UserBubble({required this.content});
+  const _UserBubble({
+    required this.content,
+    this.images = const [],
+  });
 
   final String content;
+  final List<MessageImageThumb> images;
 
   @override
   Widget build(BuildContext context) {
+    final hasText = content.trim().isNotEmpty;
+    final hasImages = images.isNotEmpty;
+
     return Align(
       alignment: Alignment.centerRight,
       child: Padding(
@@ -47,18 +61,30 @@ class _UserBubble extends StatelessWidget {
             Flexible(
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 560),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: EdgeInsets.symmetric(
+                  horizontal: hasImages && !hasText ? 10 : 16,
+                  vertical: hasImages && !hasText ? 10 : 12,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.userBubble,
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: SelectableText(
-                  content,
-                  style: const TextStyle(
-                    color: AppTheme.ink,
-                    height: 1.45,
-                    fontSize: 14.5,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (hasImages)
+                      _ImageThumbRow(images: images),
+                    if (hasImages && hasText) const SizedBox(height: 8),
+                    if (hasText)
+                      SelectableText(
+                        content,
+                        style: const TextStyle(
+                          color: AppTheme.ink,
+                          height: 1.45,
+                          fontSize: 14.5,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -70,6 +96,231 @@ class _UserBubble extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ImageThumbRow extends StatelessWidget {
+  const _ImageThumbRow({required this.images});
+
+  final List<MessageImageThumb> images;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.end,
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final image in images) _ImageThumb(image: image),
+      ],
+    );
+  }
+}
+
+class _ImageThumb extends StatelessWidget {
+  const _ImageThumb({required this.image});
+
+  final MessageImageThumb image;
+
+  void _openFullView(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.72),
+      builder: (ctx) => _ImageFullViewDialog(image: image),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = _buildPreview();
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openFullView(context),
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.border),
+          ),
+          child: preview,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreview() {
+    if (image.bytes != null && image.bytes!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.memory(
+          image.bytes!,
+          width: 168,
+          height: 126,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => _FallbackThumb(name: image.name),
+        ),
+      );
+    }
+
+    final path = image.path;
+    if (path != null && path.isNotEmpty) {
+      final file = File(path);
+      if (file.existsSync()) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.file(
+            file,
+            width: 168,
+            height: 126,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => _FallbackThumb(name: image.name),
+          ),
+        );
+      }
+    }
+
+    return _FallbackThumb(name: image.name);
+  }
+}
+
+class _FallbackThumb extends StatelessWidget {
+  const _FallbackThumb({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 168,
+      height: 126,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.image_outlined,
+              size: 28,
+              color: AppTheme.inkMuted.withValues(alpha: 0.9),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppTheme.inkMuted,
+                height: 1.25,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageFullViewDialog extends StatelessWidget {
+  const _ImageFullViewDialog({required this.image});
+
+  final MessageImageThumb image;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 900, maxHeight: 700),
+        child: Material(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        image.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Flexible(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Center(child: _fullImage()),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _fullImage() {
+    if (image.bytes != null && image.bytes!.isNotEmpty) {
+      return Image.memory(
+        image.bytes!,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => _missing(),
+      );
+    }
+    final path = image.path;
+    if (path != null && path.isNotEmpty && File(path).existsSync()) {
+      return Image.file(
+        File(path),
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => _missing(),
+      );
+    }
+    return _missing();
+  }
+
+  Widget _missing() {
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.broken_image_outlined, size: 40, color: AppTheme.inkMuted),
+          const SizedBox(height: 12),
+          Text(
+            'Preview unavailable for ${image.name}',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppTheme.inkMuted),
+          ),
+        ],
       ),
     );
   }
