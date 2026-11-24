@@ -12,10 +12,12 @@ import '../models/models.dart';
 import '../services/api_client.dart';
 import '../services/attachment_reader.dart';
 import '../services/auth_service.dart';
+import '../services/config.dart';
 import '../services/store_billing.dart';
 import '../theme/app_theme.dart';
 import '../widgets/composer_bar.dart';
 import '../widgets/left_nav.dart';
+import '../widgets/left_nav_panels.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/model_catalog.dart';
 import '../widgets/right_panel.dart';
@@ -75,6 +77,8 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _error;
   Locale _localeOverride = const Locale('en');
   final List<PendingAttachment> _attachments = [];
+  /// Local title/snippet index for Search + Library (no cloud sync).
+  final Map<String, String> _snippets = {};
 
   Future<void> Function()? _cancelStream;
   StreamSubscription<Map<String, dynamic>>? _streamSub;
@@ -171,7 +175,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   List<Conversation> _demoConversations() {
     final now = DateTime.now().toUtc();
-    return [
+    final list = [
       Conversation(
         id: 'demo_1',
         title: 'Kế hoạch học tập SysAdmin',
@@ -197,6 +201,140 @@ class _ChatScreenState extends State<ChatScreen> {
         updatedAt: now.subtract(const Duration(days: 1)).toIso8601String(),
       ),
     ];
+    _snippets
+      ..['demo_1'] = _sampleUser
+      ..['demo_2'] = 'Polish left nav, Quick Tools, and Fluent surfaces…'
+      ..['demo_3'] = 'Verify Store IAP products, restore, and Pro entitlements…'
+      ..['demo_4'] = 'Soạn email xin nghỉ phép ngắn gọn, lịch sự…';
+    return list;
+  }
+
+  void _cacheSnippet(String conversationId, List<ChatMessage> msgs) {
+    if (conversationId.isEmpty || msgs.isEmpty) return;
+    ChatMessage? firstUser;
+    for (final m in msgs) {
+      if (m.role == 'user' && m.content.trim().isNotEmpty) {
+        firstUser = m;
+        break;
+      }
+    }
+    final source = firstUser ?? msgs.first;
+    final text = source.content.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (text.isEmpty) return;
+    _snippets[conversationId] =
+        text.length <= 140 ? text : '${text.substring(0, 137)}…';
+  }
+
+  void _toggleLocale() {
+    setState(() {
+      _localeOverride = _localeOverride.languageCode == 'en'
+          ? const Locale('vi')
+          : const Locale('en');
+    });
+  }
+
+  Future<void> _clearLocalData() async {
+    if (_streaming) await _stop();
+    if (!mounted) return;
+    final auth = context.read<AuthService>();
+    await auth.signOut();
+    await auth.bootstrap();
+    if (!mounted) return;
+    setState(() {
+      _snippets.clear();
+      _attachments.clear();
+      _input.clear();
+      _messages = [];
+      _active = null;
+      _error = null;
+      _showSample = true;
+      _conversations = _demoConversations();
+      _active = _conversations.first;
+    });
+    await _bootstrap();
+  }
+
+  Future<void> _restorePurchasesAction() async {
+    final auth = context.read<AuthService>();
+    try {
+      final result = await _storeBilling.restorePurchases();
+      await auth.refreshMe();
+      await _bootstrap();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.message ??
+                (result.ok ? 'Purchases restored' : result.status),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_friendlyError(e))),
+      );
+    }
+  }
+
+  void _openAbout() {
+    showAboutPanel(context);
+  }
+
+  void _handleNavTap(String label) {
+    switch (label) {
+      case 'Search Chats':
+        showSearchChatsPanel(
+          context: context,
+          conversations: _conversations,
+          snippets: Map<String, String>.from(_snippets),
+          onSelect: _openConversation,
+        );
+        return;
+      case 'Library':
+        showLibraryPanel(
+          context: context,
+          conversations: _conversations,
+          snippets: Map<String, String>.from(_snippets),
+          pendingAttachments: List<PendingAttachment>.from(_attachments),
+          onSelectChat: _openConversation,
+          onApplyPrompt: _applyQuickTool,
+        );
+        return;
+      case 'Tools':
+        showToolsPanel(
+          context: context,
+          onQuickTool: _applyQuickTool,
+        );
+        return;
+      case 'Settings':
+        final auth = context.read<AuthService>();
+        showSettingsPanel(
+          context: context,
+          args: SettingsPanelArgs(
+            localeCode: _localeOverride.languageCode,
+            onToggleLocale: _toggleLocale,
+            onClearLocalData: _clearLocalData,
+            onOpenAbout: _openAbout,
+            showUpgrade: !(auth.user?.isPro ?? false),
+            billingBusy: _billingBusy,
+            onUpgrade: _upgradePro,
+            onRestorePurchases: _restorePurchasesAction,
+            apiBaseUrl: AppConfig.apiBaseUrl,
+          ),
+        );
+        return;
+      case 'About':
+        _openAbout();
+        return;
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$label — coming soon'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+    }
   }
 
   Future<void> _openConversation(Conversation c) async {
@@ -206,6 +344,9 @@ class _ChatScreenState extends State<ChatScreen> {
         _messages = [];
         _showSample = c.id == 'demo_1';
         _busy = false;
+        if (c.id == 'demo_1') {
+          _snippets[c.id] = _sampleUser;
+        }
       });
       return;
     }
@@ -221,6 +362,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _messages = msgs;
         _busy = false;
         _showSample = msgs.isEmpty;
+        _cacheSnippet(c.id, msgs);
       });
       _scrollToEnd();
     } catch (e) {
@@ -548,12 +690,16 @@ class _ChatScreenState extends State<ChatScreen> {
               modelDefault: localConvo.modelDefault,
               updatedAt: DateTime.now().toUtc().toIso8601String(),
             );
+            _cacheSnippet(localConvo.id, _messages);
           }
         });
         _scrollToEnd();
         return;
       }
     }
+
+    final activeConvo = conversation;
+    if (activeConvo == null) return;
 
     setState(() {
       _busy = true;
@@ -577,11 +723,12 @@ class _ChatScreenState extends State<ChatScreen> {
       ];
       _input.clear();
       _attachments.clear();
+      _cacheSnippet(activeConvo.id, _messages);
     });
     _scrollToEnd();
 
     final stream = _api.streamMessage(
-      conversationId: conversation.id,
+      conversationId: activeConvo.id,
       content: text,
       locale: _localeOverride.languageCode,
       attachments: attachmentPayload,
@@ -721,6 +868,13 @@ class _ChatScreenState extends State<ChatScreen> {
   void _applyQuickTool(String prompt) {
     _input.text = prompt;
     _input.selection = TextSelection.collapsed(offset: _input.text.length);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Prompt inserted into composer'),
+        duration: Duration(seconds: 1),
+      ),
+    );
   }
 
   String _formatResetsAt([String? iso]) {
@@ -860,24 +1014,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   onUpgrade: _upgradePro,
                   billingBusy: _billingBusy,
                   showUpgrade: showUpgrade,
-                  onNavTap: (label) {
-                    if (label == 'About') {
-                      showAboutDialog(
-                        context: context,
-                        applicationName: AppTheme.brandName,
-                        applicationVersion: '0.1.0',
-                        applicationLegalese:
-                            'Powered by xAI Grok. Microsoft Store IAP for Pro.',
-                      );
-                      return;
-                    }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('$label — coming soon'),
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  },
+                  onNavTap: _handleNavTap,
                 ),
                 Expanded(child: _buildCenter(auth)),
                 RightPanel(
@@ -885,14 +1022,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   activeId: _active?.id,
                   onSelect: _openConversation,
                   onQuickTool: _applyQuickTool,
-                  onSeeAll: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Library — coming soon'),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  },
+                  onSeeAll: () => _handleNavTap('Library'),
+                  onMoreTools: () => _handleNavTap('Tools'),
                 ),
               ],
             ),
@@ -939,31 +1070,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   model: _selectedModel,
                   streaming: _streaming,
                   usage: _usage,
-                  onToggleLocale: () {
-                    setState(() {
-                      _localeOverride = _localeOverride.languageCode == 'en'
-                          ? const Locale('vi')
-                          : const Locale('en');
-                    });
-                  },
+                  onToggleLocale: _toggleLocale,
                   localeCode: _localeOverride.languageCode,
-                  onRestore: () async {
-                    try {
-                      final result = await _storeBilling.restorePurchases();
-                      await auth.refreshMe();
-                      await _bootstrap();
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            result.message ??
-                                '${result.status} → ${result.planTier ?? 'free'}',
-                          ),
-                        ),
-                      );
-                    } catch (e) {
-                      setState(() => _error = _friendlyError(e));
-                    }
+                  onRestore: () {
+                    _restorePurchasesAction();
                   },
                   onSwitchTier: (tier) async {
                     await auth.switchStubTier(tier);
