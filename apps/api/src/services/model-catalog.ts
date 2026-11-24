@@ -12,6 +12,15 @@ export function vendorModelId(model: ModelId): string {
   }
 }
 
+/**
+ * Multimodal / image-attachment chats — Grok Fast (Free) and Grok both route here.
+ * Override with XAI_GROK_VISION_MODEL. Default is a current vision-capable id
+ * (legacy grok-2-vision-1212 was removed from xAI).
+ */
+export function vendorVisionModelId(): string {
+  return process.env.XAI_GROK_VISION_MODEL ?? 'grok-4.7';
+}
+
 export function isGrokModel(model: ModelId): boolean {
   return model === 'grok' || model === 'grok-fast';
 }

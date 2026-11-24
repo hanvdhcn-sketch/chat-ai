@@ -5,6 +5,7 @@ import {
   isGrokModel,
   resolveModel,
   vendorModelId,
+  vendorVisionModelId,
 } from './model-catalog.js';
 import {
   WEB_SEARCH_TOOL,
@@ -233,7 +234,7 @@ export async function* streamCompletion(
 
 function vendorModelForMessages(model: ModelId, messages: ChatTurn[]): string {
   if (messagesHaveImages(messages)) {
-    return process.env.XAI_GROK_VISION_MODEL ?? 'grok-2-vision-1212';
+    return vendorVisionModelId();
   }
   return vendorModelId(model);
 }

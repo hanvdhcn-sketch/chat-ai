@@ -72,6 +72,7 @@ flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3001
 | `REDIS_URL` | API | Rate limit / usage cache |
 | `XAI_API_KEY` | API only | Grok inference + native web_search (Responses API) |
 | `XAI_GROK_MODEL` / `XAI_GROK_FAST_MODEL` | API | Optional Grok model ids |
+| `XAI_GROK_VISION_MODEL` | API | Multimodal / image chats (default `grok-4.7`) |
 | `XAI_WEB_SEARCH_MODE` | API | `xai` (default) / `local` / `off` |
 | `WEB_SEARCH_TIMEOUT_MS` | API | Search-enabled request timeout (default 90000) |
 | `BRAVE_SEARCH_API_KEY` | API only | Optional; used when `XAI_WEB_SEARCH_MODE=local` |
