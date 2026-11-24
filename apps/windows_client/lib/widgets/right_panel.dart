@@ -13,6 +13,7 @@ class RightPanel extends StatelessWidget {
     required this.onSelect,
     required this.onQuickTool,
     required this.onSeeAll,
+    this.onMoreTools,
   });
 
   final List<Conversation> conversations;
@@ -20,6 +21,8 @@ class RightPanel extends StatelessWidget {
   final ValueChanged<Conversation> onSelect;
   final QuickToolHandler onQuickTool;
   final VoidCallback onSeeAll;
+  /// Opens the full tools panel (left-nav Tools). Defaults to [onSeeAll].
+  final VoidCallback? onMoreTools;
 
   static const tools = <(IconData, String, String)>[
     (Icons.description_outlined, 'Summarize Text', 'Summarize the following text:\n\n'),
@@ -82,7 +85,7 @@ class RightPanel extends StatelessWidget {
                   label: t.$2,
                   onTap: () {
                     if (t.$3.isEmpty) {
-                      onSeeAll();
+                      (onMoreTools ?? onSeeAll)();
                     } else {
                       onQuickTool(t.$3);
                     }
