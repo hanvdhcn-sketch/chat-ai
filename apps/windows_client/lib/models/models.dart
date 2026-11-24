@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 class ChatUser {
   ChatUser({
     required this.id,
@@ -50,6 +52,25 @@ class Conversation {
   }
 }
 
+/// Image shown in a user chat bubble (bytes for just-sent; name-only for history).
+class MessageImageThumb {
+  MessageImageThumb({
+    required this.name,
+    this.bytes,
+    this.path,
+    this.mimeType,
+  });
+
+  final String name;
+  final Uint8List? bytes;
+  final String? path;
+  final String? mimeType;
+
+  bool get hasPreview =>
+      (bytes != null && bytes!.isNotEmpty) ||
+      (path != null && path!.isNotEmpty);
+}
+
 class ChatMessage {
   ChatMessage({
     required this.id,
@@ -57,6 +78,7 @@ class ChatMessage {
     required this.content,
     this.status = 'complete',
     this.model,
+    this.images = const [],
   });
 
   final String id;
@@ -65,15 +87,48 @@ class ChatMessage {
   String status;
   String? model;
 
+  /// Image attachments rendered as thumbnails in the user bubble.
+  List<MessageImageThumb> images;
+
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    final raw = json['content'] as String? ?? '';
+    final parsed = splitAttachedImagePlaceholders(raw);
     return ChatMessage(
       id: json['id'] as String,
       role: json['role'] as String,
-      content: json['content'] as String? ?? '',
+      content: parsed.text,
       status: json['status'] as String? ?? 'complete',
       model: json['model'] as String?,
+      images: parsed.images,
     );
   }
+}
+
+final _attachedImageLine = RegExp(r'^\[Attached image:\s*(.+?)\]\s*$');
+
+({String text, List<MessageImageThumb> images}) splitAttachedImagePlaceholders(
+  String content,
+) {
+  if (!content.contains('[Attached image:')) {
+    return (text: content, images: const []);
+  }
+
+  final images = <MessageImageThumb>[];
+  final kept = <String>[];
+  for (final line in content.split('\n')) {
+    final match = _attachedImageLine.firstMatch(line.trim());
+    if (match != null) {
+      images.add(MessageImageThumb(name: match.group(1)!.trim()));
+      continue;
+    }
+    kept.add(line);
+  }
+
+  final text = kept
+      .join('\n')
+      .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+      .trim();
+  return (text: text, images: images);
 }
 
 class UsageSnapshot {
