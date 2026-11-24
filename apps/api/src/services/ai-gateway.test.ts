@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { resolveModel, streamCompletion } from './ai-gateway.js';
-import { coerceModelId, fallbackModel } from './model-catalog.js';
+import {
+  coerceModelId,
+  fallbackModel,
+  vendorVisionModelId,
+} from './model-catalog.js';
 
 function sseResponse(lines: string[], status = 200): Response {
   const body = lines.map((l) => `data: ${l}\n\n`).join('');
@@ -294,5 +298,66 @@ describe('streamCompletion', () => {
       'ok',
     );
     assert.equal(chunks.find((c) => c.type === 'meta')?.webSearch, false);
+  });
+
+  it('defaults vision model to grok-4.7 and honors XAI_GROK_VISION_MODEL', () => {
+    const prev = process.env.XAI_GROK_VISION_MODEL;
+    try {
+      delete process.env.XAI_GROK_VISION_MODEL;
+      assert.equal(vendorVisionModelId(), 'grok-4.7');
+      assert.notEqual(vendorVisionModelId(), 'grok-2-vision-1212');
+      process.env.XAI_GROK_VISION_MODEL = 'grok-4.3';
+      assert.equal(vendorVisionModelId(), 'grok-4.3');
+    } finally {
+      if (prev === undefined) delete process.env.XAI_GROK_VISION_MODEL;
+      else process.env.XAI_GROK_VISION_MODEL = prev;
+    }
+  });
+
+  it('routes Free image chats to vision model (not deleted grok-2-vision-1212)', async () => {
+    const prev = process.env.XAI_GROK_VISION_MODEL;
+    delete process.env.XAI_GROK_VISION_MODEL;
+    try {
+      let seenModel: string | undefined;
+      const fetchFn: typeof fetch = async (_input, init) => {
+        const body = JSON.parse(String(init?.body ?? '{}')) as { model?: string };
+        seenModel = body.model;
+        return sseResponse([
+          JSON.stringify({ choices: [{ delta: { content: 'red square' } }] }),
+          '[DONE]',
+        ]);
+      };
+
+      const chunks = await collect(
+        streamCompletion(
+          {
+            planTier: 'free',
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  { type: 'text', text: 'What color?' },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: 'data:image/png;base64,aaa',
+                      detail: 'auto',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          { fetchFn, xaiApiKey: 'test-xai', webSearchMode: 'off' },
+        ),
+      );
+
+      assert.equal(seenModel, 'grok-4.7');
+      assert.notEqual(seenModel, 'grok-2-vision-1212');
+      assert.equal(chunks.find((c) => c.type === 'done')?.model, 'grok-fast');
+    } finally {
+      if (prev === undefined) delete process.env.XAI_GROK_VISION_MODEL;
+      else process.env.XAI_GROK_VISION_MODEL = prev;
+    }
   });
 });
