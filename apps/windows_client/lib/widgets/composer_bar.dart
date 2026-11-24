@@ -36,10 +36,10 @@ class ComposerBar extends StatefulWidget {
   final ValueChanged<String>? onDictationError;
 
   @override
-  State<ComposerBar> createState() => _ComposerBarState();
+  State<ComposerBar> createState() => ComposerBarState();
 }
 
-class _ComposerBarState extends State<ComposerBar> {
+class ComposerBarState extends State<ComposerBar> {
   late final FocusNode _focusNode;
   late final DictationService _dictation;
   bool _dictating = false;
@@ -60,7 +60,7 @@ class _ComposerBarState extends State<ComposerBar> {
     super.didUpdateWidget(oldWidget);
     // After a reply finishes, put the caret back in the composer.
     if (oldWidget.streaming && !widget.streaming) {
-      _requestComposerFocus();
+      requestFocus();
     }
   }
 
@@ -76,12 +76,14 @@ class _ComposerBarState extends State<ComposerBar> {
     if (mounted) setState(() {});
   }
 
-  void _requestComposerFocus() {
+  /// Focus the composer and place the caret at the end of current text.
+  void requestFocus() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (!_focusNode.hasFocus) {
-        _focusNode.requestFocus();
-      }
+      final text = widget.controller.text;
+      widget.controller.selection =
+          TextSelection.collapsed(offset: text.length);
+      _focusNode.requestFocus();
     });
   }
 
@@ -96,7 +98,7 @@ class _ComposerBarState extends State<ComposerBar> {
     if (!_canSend) return;
     widget.onSend();
     // Field stays enabled while streaming so focus can stick / return.
-    _requestComposerFocus();
+    requestFocus();
   }
 
   KeyEventResult _onComposerKeyEvent(FocusNode node, KeyEvent event) {
@@ -142,7 +144,7 @@ class _ComposerBarState extends State<ComposerBar> {
     }
 
     setState(() => _dictating = true);
-    _requestComposerFocus();
+    requestFocus();
 
     try {
       await _dictation.start(
@@ -194,7 +196,7 @@ class _ComposerBarState extends State<ComposerBar> {
     await _dictation.stop();
     if (mounted) {
       setState(() => _dictating = false);
-      _requestComposerFocus();
+      requestFocus();
     }
   }
 

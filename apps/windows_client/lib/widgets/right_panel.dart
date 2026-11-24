@@ -25,13 +25,13 @@ class RightPanel extends StatelessWidget {
   final VoidCallback? onMoreTools;
 
   static const tools = <(IconData, String, String)>[
-    (Icons.description_outlined, 'Summarize Text', 'Summarize the following text:\n\n'),
-    (Icons.mail_outline_rounded, 'Write Email', 'Help me write a professional email about:\n\n'),
-    (Icons.translate_rounded, 'Translate', 'Translate the following to English:\n\n'),
-    (Icons.code_rounded, 'Explain Code', 'Explain this code step by step:\n\n'),
-    (Icons.image_outlined, 'Create Image', 'Describe an image I can generate for:\n\n'),
-    (Icons.flight_takeoff_rounded, 'Plan Trip', 'Help me plan a trip to:\n\n'),
-    (Icons.school_outlined, 'Study Helper', 'Create a study plan for:\n\n'),
+    (Icons.description_outlined, 'Summarize Text', 'Summarize the following text: '),
+    (Icons.mail_outline_rounded, 'Write Email', 'Help me write a professional email about: '),
+    (Icons.translate_rounded, 'Translate', 'Translate the following to English: '),
+    (Icons.code_rounded, 'Explain Code', 'Explain this code step by step: '),
+    (Icons.image_outlined, 'Create Image', 'Describe an image I can generate for: '),
+    (Icons.flight_takeoff_rounded, 'Plan Trip', 'Help me plan a trip to: '),
+    (Icons.school_outlined, 'Study Helper', 'Create a study plan for: '),
     (Icons.more_horiz_rounded, 'More Tools', ''),
   ];
 
