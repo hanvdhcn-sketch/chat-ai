@@ -853,7 +853,8 @@ class _AboutBody extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             'Orbita is your AI assistant on Windows — chat with xAI Grok, '
-            'attach files and images, and upgrade via Microsoft Store IAP.',
+            'attach files and images, and upgrade via Microsoft Store IAP. '
+            'Free uses a lighter Grok model; Pro uses a stronger one plus higher quotas.',
             style: TextStyle(
               color: AppTheme.ink.withValues(alpha: 0.88),
               height: 1.45,

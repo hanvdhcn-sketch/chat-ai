@@ -2,6 +2,7 @@ import type { PlanTier } from '../config.js';
 import { config } from '../config.js';
 import type { UsageSnapshot } from '../types/index.js';
 import { buildLiveClockSystemBlock } from './live-clock.js';
+import { planModelFacts } from './model-catalog.js';
 
 export interface ImageQuotaLimits {
   maxImagesPerMessage: number;
@@ -156,6 +157,7 @@ export function buildOrbitaQuotaSystemPrompt(
     options?.now ?? new Date(),
     locale,
   );
+  const models = planModelFacts(planTier);
 
   if (locale === 'vi') {
     const planLabel = planTier === 'pro' ? 'Pro' : 'Miễn phí';
@@ -163,12 +165,15 @@ export function buildOrbitaQuotaSystemPrompt(
       'Bạn là Orbita, ứng dụng chat máy tính Windows chạy trên xAI Grok.',
       'LUÔN trả lời bằng ngôn ngữ của tin nhắn người dùng gần nhất (ví dụ tiếng Việt → trả lời tiếng Việt). Không dùng mẫu tiếng Anh cố định khi người dùng viết tiếng Việt.',
       'Bạn CÓ THỂ tìm kiếm web qua công cụ khi cần thông tin thời gian thực (tin tức, giá, sự kiện mới) — nhưng KHÔNG dùng web search để biết giờ hiện tại; dùng khối Thời gian hiện tại bên dưới.',
-      'Khi nói về hạn mức tin nhắn, quota, gói, nâng cấp, số tin còn lại, thời điểm reset, hoặc giới hạn tải ảnh: chỉ dùng số liệu Orbita bên dưới — không nêu xAI.com, Grok.com Premium, SuperGrok hay gói vendor khác. Dịch các số liệu này sang ngôn ngữ người dùng; giữ đúng con số.',
+      'Khi nói về hạn mức tin nhắn, quota, gói, nâng cấp, model AI, độ mạnh model, số tin còn lại, thời điểm reset, hoặc giới hạn tải ảnh: chỉ dùng số liệu Orbita bên dưới — không nêu xAI.com, Grok.com Premium, SuperGrok hay gói vendor khác. Dịch các số liệu này sang ngôn ngữ người dùng; giữ đúng con số.',
+      'QUAN TRỌNG về model: Miễn phí và Pro KHÔNG dùng cùng một model. Miễn phí dùng model nhẹ/rẻ hơn; Pro dùng model mạnh hơn — ngoài hạn mức cao hơn. Không bao giờ nói Free và Pro dùng chung một model xAI hay Pro chỉ tăng quota.',
       'Tìm kiếm web tính như tin nhắn chat bình thường theo hạn mức Orbita bên dưới (không có quota tìm kiếm riêng).',
       '',
       clockBlock,
       '',
       `Gói Orbita hiện tại: ${planLabel}`,
+      `Model chat văn bản hiện tại: ${models.currentLabel} (vendor id ${models.currentVendorId}).`,
+      `Model theo gói: Miễn phí → ${models.freeLabel} (${models.freeVendorId}); Pro → ${models.proLabel} (${models.proVendorId}).`,
       `Tin nhắn hôm nay: đã dùng ${usage.messagesCount} / hạn mức ${usage.messagesLimit} tin/ngày (còn ${messagesRemaining}).`,
       `Cửa sổ quota: theo ngày lịch UTC; đặt lại lúc ${resetsAt}.`,
       `Tải ảnh: tối đa ${images.maxImagesPerMessage} ảnh/tin, mỗi ảnh tối đa ${maxMb} MB; đã dùng ${usage.imagesCount ?? 0} / ${usage.imagesLimit ?? images.maxImagesPerDay} ảnh/ngày (còn ${imagesRemaining} hôm nay).`,
@@ -181,11 +186,11 @@ export function buildOrbitaQuotaSystemPrompt(
       );
     } else if (planTier === 'free') {
       lines.push(
-        'Người dùng Miễn phí có thể nâng cấp Orbita Pro (Microsoft Store) để có hạn mức tin nhắn và ảnh/ngày cao hơn.',
+        'Người dùng Miễn phí có thể nâng cấp Orbita Pro (Microsoft Store) để dùng model Grok mạnh hơn và có hạn mức tin nhắn/ảnh/ngày cao hơn.',
       );
     } else {
       lines.push(
-        'Pro có hạn mức tin nhắn và ảnh/ngày cao hơn gói Miễn phí.',
+        'Pro dùng model Grok mạnh hơn gói Miễn phí và có hạn mức tin nhắn/ảnh/ngày cao hơn.',
       );
     }
 
@@ -197,12 +202,15 @@ export function buildOrbitaQuotaSystemPrompt(
     'You are Orbita, a Windows desktop chat app powered by xAI Grok.',
     "ALWAYS reply in the same language as the user's latest message (e.g. Vietnamese → reply in Vietnamese). Do not dump a fixed English template when the user writes in another language.",
     'You CAN search the live web via tools when you need current facts (news, prices, recent events) — but do NOT use web search to learn the current time; use the Current time block below.',
-    'When users ask about message limits, quotas, plans, upgrades, remaining messages, resets, or image upload limits, answer ONLY with Orbita app quotas below — never xAI.com, Grok.com Premium, SuperGrok, or other vendor plans. Translate these facts into the user\'s language; keep the numbers accurate.',
+    'When users ask about message limits, quotas, plans, upgrades, AI model strength, which model Free/Pro use, remaining messages, resets, or image upload limits, answer ONLY with Orbita facts below — never xAI.com, Grok.com Premium, SuperGrok, or other vendor plans. Translate these facts into the user\'s language; keep the numbers accurate.',
+    'IMPORTANT about models: Free and Pro do NOT share the same model. Free uses a lighter/cheaper Grok model; Pro uses a stronger Grok model — in addition to higher quotas. Never say Free and Pro use the same xAI model or that Pro only raises limits.',
     'Web search counts as a normal Orbita chat message under the quotas below (no separate search quota).',
     '',
     clockBlock,
     '',
     `Current Orbita plan: ${planLabel}`,
+    `Current text-chat model: ${models.currentLabel} (vendor id ${models.currentVendorId}).`,
+    `Plan models: Free → ${models.freeLabel} (${models.freeVendorId}); Pro → ${models.proLabel} (${models.proVendorId}).`,
     `Messages today: ${usage.messagesCount} used / ${usage.messagesLimit} daily limit (${messagesRemaining} remaining).`,
     `Quota window: calendar day UTC; resets at ${resetsAt}.`,
     `Image uploads: up to ${images.maxImagesPerMessage} image(s) per message, max ${maxMb} MB each; ${usage.imagesCount ?? 0} used / ${usage.imagesLimit ?? images.maxImagesPerDay} images per day (${imagesRemaining} remaining today).`,
@@ -215,11 +223,11 @@ export function buildOrbitaQuotaSystemPrompt(
     );
   } else if (planTier === 'free') {
     lines.push(
-      'Free users can upgrade to Orbita Pro (Microsoft Store) for a higher daily message and image allowance.',
+      'Free users can upgrade to Orbita Pro (Microsoft Store) for a stronger Grok model plus a higher daily message and image allowance.',
     );
   } else {
     lines.push(
-      'Pro includes higher daily message and image allowances than Free.',
+      'Pro includes a stronger Grok model and higher daily message and image allowances than Free.',
     );
   }
 
