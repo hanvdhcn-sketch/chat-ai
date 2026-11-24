@@ -58,6 +58,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  final _composerKey = GlobalKey<ComposerBarState>();
 
   late final ApiClient _api;
   late final StoreBillingService _storeBilling;
@@ -866,8 +867,13 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _applyQuickTool(String prompt) {
-    _input.text = prompt;
-    _input.selection = TextSelection.collapsed(offset: _input.text.length);
+    // Keep caret after a trailing space so the user can type immediately.
+    final text = prompt.endsWith(' ') ? prompt : '$prompt ';
+    _input.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+    _composerKey.currentState?.requestFocus();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -1116,6 +1122,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                 ),
                 ComposerBar(
+                  key: _composerKey,
                   controller: _input,
                   streaming: _streaming,
                   onSend: _send,
