@@ -49,7 +49,7 @@ flutter run -d windows \
 ## Free badge / i18n
 
 - Free: shows **Powered by Orbita** badge; Pro hides it.
-- Locale stubs: English + Vietnamese (`lib/l10n`).
+- UI languages (Settings picker, persisted): en, vi, zh, ja, ko, es, fr, de, pt-BR, hi (`lib/l10n`).
 
 ## MSIX / Store
 

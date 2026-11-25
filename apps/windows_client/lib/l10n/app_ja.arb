@@ -1,0 +1,55 @@
+{
+  "@@locale": "ja",
+  "appTitle": "Orbita",
+  "newChat": "新しいチャット",
+  "send": "送信",
+  "messageHint": "Orbita にメッセージ…",
+  "signIn": "サインイン",
+  "signOut": "サインアウト",
+  "usageRemaining": "本日あと {remaining} メッセージ",
+  "@usageRemaining": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "upgradePro": "Pro にアップグレード",
+  "goPro": "Go Pro",
+  "poweredBy": "Powered by Orbita",
+  "freePlan": "無料",
+  "proPlan": "Pro",
+  "freeQuotaHint": "無料: 1日60メッセージ · 1通あたり最大3画像（5 MB）、1日8枚",
+  "proQuotaHint": "Pro: 1日400メッセージ · 1通あたり最大8画像（8 MB）、1日20枚",
+  "messageQuotaReached": "1日のメッセージ上限に達しました。次のリセット（{resetsAt}）までお待ちください。",
+  "@messageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "imageQuotaReached": "1日の画像アップロード上限に達しました。次のリセット（{resetsAt}）までお待ちください。",
+  "@imageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "monthlyImageAllowanceReached": "今月の画像枠に達しました。{resetsAt} まで画像は無料枠（1通3枚、1日8枚）になります。テキストチャットは影響しません。",
+  "@monthlyImageAllowanceReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "conversations": "会話",
+  "settings": "設定",
+  "language": "言語",
+  "languagePickerHint": "アプリの表示言語を選択",
+  "searchChats": "チャットを検索",
+  "library": "ライブラリ",
+  "tools": "ツール",
+  "about": "情報",
+  "stubAuthHint": "Supabase 連携まで開発用スタブトークンを使用します。",
+  "emptyChat": "会話を始める",
+  "streaming": "考え中…",
+  "stop": "停止",
+  "storeStubHint": "開発専用の Store stub（ALLOW_STORE_STUB_GRANT）。通常ビルドはアプリ内購入を使用します。",
+  "storePurchaseHint": "Microsoft Store のアプリ内購入で Pro を購入（Go Pro）。支払いは Orbita 内で処理されます。",
+  "restorePurchases": "購入を復元"
+}

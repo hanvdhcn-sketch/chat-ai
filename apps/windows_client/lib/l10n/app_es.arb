@@ -1,0 +1,55 @@
+{
+  "@@locale": "es",
+  "appTitle": "Orbita",
+  "newChat": "Nuevo chat",
+  "send": "Enviar",
+  "messageHint": "Escribe a Orbita…",
+  "signIn": "Iniciar sesión",
+  "signOut": "Cerrar sesión",
+  "usageRemaining": "{remaining} mensajes restantes hoy",
+  "@usageRemaining": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "upgradePro": "Mejorar a Pro",
+  "goPro": "Go Pro",
+  "poweredBy": "Powered by Orbita",
+  "freePlan": "Gratis",
+  "proPlan": "Pro",
+  "freeQuotaHint": "Gratis: 60 mensajes/día · hasta 3 imágenes/mensaje (5 MB), 8/día",
+  "proQuotaHint": "Pro: 400 mensajes/día · hasta 8 imágenes/mensaje (8 MB), 20/día",
+  "messageQuotaReached": "Límite diario de mensajes alcanzado. Espera el próximo reinicio ({resetsAt}) para continuar.",
+  "@messageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "imageQuotaReached": "Límite diario de imágenes alcanzado. Espera el próximo reinicio ({resetsAt}) para subir más.",
+  "@imageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "monthlyImageAllowanceReached": "Has agotado la cuota mensual de imágenes. Hasta {resetsAt}, las subidas usan límites Gratis (3 por mensaje, 8 al día). El chat de texto no se ve afectado.",
+  "@monthlyImageAllowanceReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "conversations": "Conversaciones",
+  "settings": "Configuración",
+  "language": "Idioma",
+  "languagePickerHint": "Elige el idioma de la aplicación",
+  "searchChats": "Buscar chats",
+  "library": "Biblioteca",
+  "tools": "Herramientas",
+  "about": "Acerca de",
+  "stubAuthHint": "La autenticación de desarrollo usa tokens stub hasta conectar Supabase.",
+  "emptyChat": "Inicia una conversación",
+  "streaming": "Pensando…",
+  "stop": "Detener",
+  "storeStubHint": "Concesión stub de Store solo para desarrollo (ALLOW_STORE_STUB_GRANT). Las builds normales usan compra integrada.",
+  "storePurchaseHint": "Compra Pro en la app vía Microsoft Store (Go Pro). Store procesa el pago dentro de Orbita.",
+  "restorePurchases": "Restaurar compras"
+}

@@ -1,0 +1,55 @@
+{
+  "@@locale": "pt",
+  "appTitle": "Orbita",
+  "newChat": "Novo chat",
+  "send": "Enviar",
+  "messageHint": "Mensagem para o Orbita…",
+  "signIn": "Entrar",
+  "signOut": "Sair",
+  "usageRemaining": "{remaining} mensagens restantes hoje",
+  "@usageRemaining": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "upgradePro": "Upgrade para Pro",
+  "goPro": "Go Pro",
+  "poweredBy": "Powered by Orbita",
+  "freePlan": "Grátis",
+  "proPlan": "Pro",
+  "freeQuotaHint": "Grátis: 60 mensagens/dia · até 3 imagens/mensagem (5 MB), 8/dia",
+  "proQuotaHint": "Pro: 400 mensagens/dia · até 8 imagens/mensagem (8 MB), 20/dia",
+  "messageQuotaReached": "Limite diário de mensagens atingido. Aguarde a próxima reinicialização ({resetsAt}) para continuar.",
+  "@messageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "imageQuotaReached": "Limite diário de imagens atingido. Aguarde a próxima reinicialização ({resetsAt}) para enviar mais.",
+  "@imageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "monthlyImageAllowanceReached": "Você atingiu a cota mensal de imagens. Até {resetsAt}, os envios usam limites Grátis (3 por mensagem, 8 por dia). O chat de texto não é afetado.",
+  "@monthlyImageAllowanceReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "conversations": "Conversas",
+  "settings": "Configurações",
+  "language": "Idioma",
+  "languagePickerHint": "Escolha o idioma de exibição do app",
+  "searchChats": "Pesquisar chats",
+  "library": "Biblioteca",
+  "tools": "Ferramentas",
+  "about": "Sobre",
+  "stubAuthHint": "Auth de desenvolvimento usa tokens stub até o Supabase ser conectado.",
+  "emptyChat": "Comece uma conversa",
+  "streaming": "Pensando…",
+  "stop": "Parar",
+  "storeStubHint": "Concessão stub da Store só para desenvolvimento (ALLOW_STORE_STUB_GRANT). Builds normais usam compra no app.",
+  "storePurchaseHint": "Compre o Pro no app pela Microsoft Store (Go Pro). A Store processa o pagamento dentro do Orbita.",
+  "restorePurchases": "Restaurar compras"
+}

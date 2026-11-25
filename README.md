@@ -96,7 +96,7 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 | Images/day | 8 | 20 |
 | Models | Grok Fast (`grok-fast` → `XAI_GROK_FAST_MODEL`, default `grok-4.3`) | Grok (`grok` → `XAI_GROK_MODEL`, current strongest stable; default `grok-4.7`) |
 | Branding | “Powered by Orbita” badge | Hidden |
-| UI languages | VI + EN | VI + EN |
+| UI languages | en, vi, zh, ja, ko, es, fr, de, pt-BR, hi | same |
 
 ## MSIX / Microsoft Store (short)
 

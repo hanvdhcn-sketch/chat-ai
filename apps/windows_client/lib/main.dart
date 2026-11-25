@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/chat_screen.dart';
 import 'services/auth_service.dart';
+import 'services/locale_preference.dart';
 import 'services/startup_clock.dart';
 import 'theme/app_theme.dart';
 
@@ -16,43 +17,57 @@ Future<void> main() async {
   StartupClock.mark('binding');
 
   final auth = AuthService();
+  final localePreference = LocalePreference();
   // Optimistic local token — never block first paint on prefs or /v1/me.
   auth.hydrateLocalSync();
   StartupClock.mark('hydrate');
 
-  runApp(ChatAiApp(auth: auth));
+  runApp(ChatAiApp(auth: auth, localePreference: localePreference));
   StartupClock.mark('runApp');
 
   // Prefs + /v1/me after the first frame so the shell is already up.
   WidgetsBinding.instance.addPostFrameCallback((_) {
     StartupClock.mark('firstFrame');
+    unawaited(localePreference.load());
     unawaited(auth.bootstrap());
   });
 }
 
 class ChatAiApp extends StatelessWidget {
-  const ChatAiApp({super.key, required this.auth});
+  const ChatAiApp({
+    super.key,
+    required this.auth,
+    required this.localePreference,
+  });
 
   final AuthService auth;
+  final LocalePreference localePreference;
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: auth,
-      child: MaterialApp(
-        title: AppTheme.brandName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        locale: const Locale('en'),
-        supportedLocales: AppLocalizations.supportedLocales,
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        // Paint chat shell immediately — do not gate on network auth.
-        home: const ChatScreen(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: auth),
+        ChangeNotifierProvider.value(value: localePreference),
+      ],
+      child: Consumer<LocalePreference>(
+        builder: (context, localePref, _) {
+          return MaterialApp(
+            title: AppTheme.brandName,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light(),
+            locale: localePref.locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            // Paint chat shell immediately — do not gate on network auth.
+            home: const ChatScreen(),
+          );
+        },
       ),
     );
   }

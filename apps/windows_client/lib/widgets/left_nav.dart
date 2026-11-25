@@ -52,11 +52,11 @@ class LeftNav extends StatelessWidget {
                   child: _NewChatButton(onPressed: onNewChat),
                 ),
                 const SizedBox(height: 8),
-                ..._navItems.map(
+                ..._navItems(context).map(
                   (item) => _NavTile(
                     icon: item.$1,
                     label: item.$2,
-                    onTap: () => onNavTap?.call(item.$2),
+                    onTap: () => onNavTap?.call(item.$3),
                   ),
                 ),
                 const Spacer(),
@@ -77,13 +77,17 @@ class LeftNav extends StatelessWidget {
   }
 }
 
-const _navItems = <(IconData, String)>[
-  (Icons.search_rounded, 'Search Chats'),
-  (Icons.folder_outlined, 'Library'),
-  (Icons.handyman_outlined, 'Tools'),
-  (Icons.settings_outlined, 'Settings'),
-  (Icons.info_outline_rounded, 'About'),
-];
+/// (icon, localized label, stable nav id)
+List<(IconData, String, String)> _navItems(BuildContext context) {
+  final loc = AppLocalizations.of(context);
+  return [
+    (Icons.search_rounded, loc.searchChats, 'Search Chats'),
+    (Icons.folder_outlined, loc.library, 'Library'),
+    (Icons.handyman_outlined, loc.tools, 'Tools'),
+    (Icons.settings_outlined, loc.settings, 'Settings'),
+    (Icons.info_outline_rounded, loc.about, 'About'),
+  ];
+}
 
 class _NewChatIntent extends Intent {
   const _NewChatIntent();
@@ -168,10 +172,10 @@ class _NewChatButton extends StatelessWidget {
             children: [
               const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 18),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'New Chat',
-                  style: TextStyle(
+                  AppLocalizations.of(context).newChat,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                     fontSize: 14.5,
@@ -309,7 +313,7 @@ class _UpgradeCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 11),
                   child: Center(
                     child: Text(
-                      busy ? '…' : 'Go Pro',
+                      busy ? '…' : AppLocalizations.of(context).goPro,
                       style: const TextStyle(
                         color: Color(0xFF1C1917),
                         fontWeight: FontWeight.w700,

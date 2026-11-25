@@ -35,6 +35,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get upgradePro => 'Nâng cấp Pro';
 
   @override
+  String get goPro => 'Go Pro';
+
+  @override
   String get poweredBy => 'Powered by Orbita';
 
   @override
@@ -74,6 +77,21 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get language => 'Ngôn ngữ';
+
+  @override
+  String get languagePickerHint => 'Chọn ngôn ngữ hiển thị của ứng dụng';
+
+  @override
+  String get searchChats => 'Tìm hội thoại';
+
+  @override
+  String get library => 'Thư viện';
+
+  @override
+  String get tools => 'Công cụ';
+
+  @override
+  String get about => 'Giới thiệu';
 
   @override
   String get stubAuthHint =>

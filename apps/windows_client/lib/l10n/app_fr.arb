@@ -1,0 +1,55 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Orbita",
+  "newChat": "Nouveau chat",
+  "send": "Envoyer",
+  "messageHint": "Écrire à Orbita…",
+  "signIn": "Connexion",
+  "signOut": "Déconnexion",
+  "usageRemaining": "{remaining} messages restants aujourd’hui",
+  "@usageRemaining": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "upgradePro": "Passer à Pro",
+  "goPro": "Go Pro",
+  "poweredBy": "Powered by Orbita",
+  "freePlan": "Gratuit",
+  "proPlan": "Pro",
+  "freeQuotaHint": "Gratuit : 60 messages/jour · jusqu’à 3 images/message (5 Mo), 8/jour",
+  "proQuotaHint": "Pro : 400 messages/jour · jusqu’à 8 images/message (8 Mo), 20/jour",
+  "messageQuotaReached": "Limite quotidienne de messages atteinte. Attendez la prochaine réinitialisation ({resetsAt}) pour continuer.",
+  "@messageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "imageQuotaReached": "Limite quotidienne d’images atteinte. Attendez la prochaine réinitialisation ({resetsAt}) pour en envoyer davantage.",
+  "@imageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "monthlyImageAllowanceReached": "Vous avez atteint le quota d’images du mois. Jusqu’à {resetsAt}, les envois utilisent les limites Gratuites (3 par message, 8 par jour). Le chat texte n’est pas affecté.",
+  "@monthlyImageAllowanceReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "conversations": "Conversations",
+  "settings": "Paramètres",
+  "language": "Langue",
+  "languagePickerHint": "Choisir la langue d’affichage",
+  "searchChats": "Rechercher des chats",
+  "library": "Bibliothèque",
+  "tools": "Outils",
+  "about": "À propos",
+  "stubAuthHint": "L’auth de développement utilise des jetons stub jusqu’à la connexion Supabase.",
+  "emptyChat": "Démarrer une conversation",
+  "streaming": "Réflexion…",
+  "stop": "Arrêter",
+  "storeStubHint": "Octroi stub Store réservé au développement (ALLOW_STORE_STUB_GRANT). Les builds normales utilisent l’achat in-app.",
+  "storePurchaseHint": "Achetez Pro dans l’app via le Microsoft Store (Go Pro). Le Store traite le paiement dans Orbita.",
+  "restorePurchases": "Restaurer les achats"
+}
