@@ -100,11 +100,11 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 
 ## MSIX / Microsoft Store (short)
 
-1. Partner Center: create app; open **Product identity** and paste into `apps/windows_client/pubspec.yaml` `msix_config`:
-   - Package/Identity **Name** → `identity_name`
-   - Package/Identity **Publisher** (`CN=…`) → `publisher`
-   - **Publisher display name** → `publisher_display_name`
-   - Keep `display_name: Orbita`; keep `identity_name` stable after association.
+1. Partner Center Product identity is already in `apps/windows_client/pubspec.yaml` `msix_config`:
+   - **Name** `PrecisionToolsLab.OrbitaAI` · **Publisher** `CN=97082A87-14EA-4209-8039-A9443BD7AD27`
+   - **Publisher display name** `Precision Tools Lab` · **Display name** `Orbita AI`
+   - Expected PFN (derived): `PrecisionToolsLab.OrbitaAI_2h9tr0fqkywqe`
+   - Device family: Windows 10/11 Desktop; request **runFullTrust** in submission notes.
 2. Create **Subscription add-on** with Store ID / product id exactly **`pro_monthly`** at **$9.99/mo**, optional 7-day trial; set `MS_STORE_PRO_PRODUCT_ID` if you ever change the id.
 3. Enroll Azure AD app + Partner Center **service access** for Collections/Purchase API; set `MS_STORE_*` secrets on the API only.
 4. Build Store package (unsigned; Store signs on upload):

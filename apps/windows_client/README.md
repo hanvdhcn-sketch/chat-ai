@@ -3,7 +3,7 @@
 Display name: **Orbita**. Target: Microsoft Store via MSIX.  
 **Runtime:** xAI Grok only. **Billing:** Microsoft Store subscription / IAP (not Stripe).
 
-Package Dart name / MSIX `identity_name` stay `chatai` / `ChatAI.Placeholder` for Store continuity.
+Package Dart name stays `chatai`; MSIX `identity_name` is `PrecisionToolsLab.OrbitaAI` (Partner Center).
 
 ## Prerequisites
 
@@ -53,12 +53,14 @@ flutter run -d windows \
 
 ## MSIX / Store
 
-1. In Partner Center → app → **Product identity**, copy:
-   - Package/Identity **Name** → `msix_config.identity_name`
-   - Package/Identity **Publisher** (`CN=…`) → `msix_config.publisher`
-   - **Publisher display name** → `msix_config.publisher_display_name` (already: **Precision Tools Lab**)
-2. Keep `display_name: Orbita AI`. Create subscription add-on Store ID / product id **`pro_monthly`**.
-3. Build Store package (output: `dist/msix/Orbita.msix`):
+Identity in `pubspec.yaml` `msix_config` (Partner Center Product identity):
+- **Name** `PrecisionToolsLab.OrbitaAI` · **Publisher** `CN=97082A87-14EA-4209-8039-A9443BD7AD27`
+- **Publisher display name** `Precision Tools Lab` · **Display name** `Orbita AI`
+- Expected PFN (derived): `PrecisionToolsLab.OrbitaAI_2h9tr0fqkywqe`
+- Device family: Windows 10/11 Desktop · request **runFullTrust** in submission notes
+
+1. Create subscription add-on Store ID / product id **`pro_monthly`**.
+2. Build Store package (output: `dist/msix/Orbita.msix`):
 
 ```powershell
 cd apps/windows_client
@@ -69,6 +71,6 @@ dart run msix:create --store `
   --output-path=..\..\dist\msix --output-name=Orbita
 ```
 
-For production API host: `-ApiBaseUrl https://your-api.example.com` (or pass `--dart-define=API_BASE_URL=…`).
+3. For production API host: `-ApiBaseUrl https://your-api.example.com` (or pass `--dart-define=API_BASE_URL=…`).
 Upload the `.msix` in Partner Center Packages; Store signs it. Do **not** expect local sideload of a `--store` package without Partner Center association.
 See root README for Azure AD Collections notes.
