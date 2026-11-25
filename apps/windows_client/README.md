@@ -56,8 +56,8 @@ flutter run -d windows \
 1. In Partner Center → app → **Product identity**, copy:
    - Package/Identity **Name** → `msix_config.identity_name`
    - Package/Identity **Publisher** (`CN=…`) → `msix_config.publisher`
-   - **Publisher display name** → `msix_config.publisher_display_name`
-2. Keep `display_name: Orbita`. Create subscription add-on Store ID / product id **`pro_monthly`**.
+   - **Publisher display name** → `msix_config.publisher_display_name` (already: **Precision Tools Lab**)
+2. Keep `display_name: Orbita AI`. Create subscription add-on Store ID / product id **`pro_monthly`**.
 3. Build Store package (output: `dist/msix/Orbita.msix`):
 
 ```powershell
