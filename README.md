@@ -100,14 +100,25 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 
 ## MSIX / Microsoft Store (short)
 
-1. Partner Center: create app identity (publisher, package family name).
-2. Create **Subscription add-on** (e.g. `pro_monthly`) at **$9.99/mo**, optional 7-day trial; set `MS_STORE_PRO_PRODUCT_ID`.
+1. Partner Center: create app; open **Product identity** and paste into `apps/windows_client/pubspec.yaml` `msix_config`:
+   - Package/Identity **Name** → `identity_name`
+   - Package/Identity **Publisher** (`CN=…`) → `publisher`
+   - **Publisher display name** → `publisher_display_name`
+   - Keep `display_name: Orbita`; keep `identity_name` stable after association.
+2. Create **Subscription add-on** with Store ID / product id exactly **`pro_monthly`** at **$9.99/mo**, optional 7-day trial; set `MS_STORE_PRO_PRODUCT_ID` if you ever change the id.
 3. Enroll Azure AD app + Partner Center **service access** for Collections/Purchase API; set `MS_STORE_*` secrets on the API only.
-4. Fill `msix_config` in `apps/windows_client/pubspec.yaml` (`display_name: Orbita`; keep `identity_name` stable).
-5. Build signed MSIX (`msix` package or CI); capability **InternetClient** only if possible.
-6. Privacy policy URL, age rating, bilingual Store listing.
-7. WinRT bridge is in `apps/windows_client/windows/runner/store_billing_plugin.cpp` (channel `chatai/store_billing`: purchase / restore / license). Optional Collections User Store ID when the API supplies a service access token.
-8. Certification smoke: no localhost-only networking in release builds; auth/billing over HTTPS; Store purchase works in sandbox.
+4. Build Store package (unsigned; Store signs on upload):
+
+   ```powershell
+   cd apps/windows_client
+   powershell -ExecutionPolicy Bypass -File .\scripts\build_store_msix.ps1 -ApiBaseUrl https://YOUR-API
+   # → dist/msix/Orbita.msix
+   ```
+
+5. Upload package in Partner Center; privacy policy URL, age rating, bilingual listing; submit app + add-on.
+6. Sandbox Microsoft account + Store flight install to test **Go Pro** in-app purchase.
+7. WinRT bridge: `apps/windows_client/windows/runner/store_billing_plugin.cpp` (channel `chatai/store_billing`).
+8. Certification smoke: HTTPS API in release builds; Store purchase works in sandbox.
 
 ## Scripts
 
