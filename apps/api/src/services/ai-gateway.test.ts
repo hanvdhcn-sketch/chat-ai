@@ -4,6 +4,8 @@ import { resolveModel, streamCompletion } from './ai-gateway.js';
 import {
   coerceModelId,
   fallbackModel,
+  RECOMMENDED_FAST_GROK_MODEL,
+  RECOMMENDED_FLAGSHIP_GROK_MODEL,
   vendorModelId,
   vendorReasoningExtras,
   vendorVisionModelId,
@@ -59,15 +61,17 @@ describe('resolveModel', () => {
     assert.equal(coerceModelId('grok'), 'grok');
   });
 
-  it('maps Free to cheaper grok-4.3 and Pro to stronger grok-4.7', () => {
+  it('maps Free to cheaper fast default and Pro to recommended flagship (env-overridable)', () => {
     const prevFast = process.env.XAI_GROK_FAST_MODEL;
     const prevPro = process.env.XAI_GROK_MODEL;
     try {
       delete process.env.XAI_GROK_FAST_MODEL;
       delete process.env.XAI_GROK_MODEL;
-      assert.equal(vendorModelId('grok-fast'), 'grok-4.3');
-      assert.equal(vendorModelId('grok'), 'grok-4.7');
+      assert.equal(vendorModelId('grok-fast'), RECOMMENDED_FAST_GROK_MODEL);
+      assert.equal(vendorModelId('grok'), RECOMMENDED_FLAGSHIP_GROK_MODEL);
       assert.notEqual(vendorModelId('grok-fast'), vendorModelId('grok'));
+      process.env.XAI_GROK_MODEL = 'grok-4.8';
+      assert.equal(vendorModelId('grok'), 'grok-4.8');
     } finally {
       if (prevFast === undefined) delete process.env.XAI_GROK_FAST_MODEL;
       else process.env.XAI_GROK_FAST_MODEL = prevFast;

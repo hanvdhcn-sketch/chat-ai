@@ -854,7 +854,9 @@ class _AboutBody extends StatelessWidget {
           Text(
             'Orbita is your AI assistant on Windows — chat with xAI Grok, '
             'attach files and images, and upgrade via Microsoft Store IAP. '
-            'Free uses a lighter Grok model; Pro uses a stronger one plus higher quotas.',
+            'Free uses a lighter/cheaper Grok model; Pro uses the current '
+            'strongest stable Grok (not permanently fixed to one version) '
+            'plus higher quotas.',
             style: TextStyle(
               color: AppTheme.ink.withValues(alpha: 0.88),
               height: 1.45,

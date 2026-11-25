@@ -48,8 +48,9 @@ Dev token: `Bearer stub:user_demo:free` or `stub:user_demo:pro`.
 
 ## AI gateway
 
-- Free → `grok-fast` only → vendor `grok-4.3` (lighter/cheaper; reasoning off)
-- Pro → `grok` (default) → vendor `grok-4.7` (stronger); or `grok-fast` when requested
+- Free → `grok-fast` only → vendor `XAI_GROK_FAST_MODEL` (default `grok-4.3`, lighter/cheaper; reasoning off)
+- Pro → `grok` (default) → vendor `XAI_GROK_MODEL` (default = recommended flagship stable, currently `grok-4.7`); or `grok-fast` when requested
+- **Bump Pro flagship without code:** set `XAI_GROK_MODEL` (and usually `XAI_GROK_VISION_MODEL`) to the new stable id from [docs.x.ai/developers/models](https://docs.x.ai/developers/models), redeploy. xAI has no cross-family “always strongest” alias — family aliases only track within a family.
 - Free and Pro do **not** share the same chat model
 - With `XAI_API_KEY`: streams from xAI
 - **Web search (default on):** xAI Responses API built-in `web_search` (`XAI_WEB_SEARCH_MODE=xai`) — automatic; only `XAI_API_KEY` required
