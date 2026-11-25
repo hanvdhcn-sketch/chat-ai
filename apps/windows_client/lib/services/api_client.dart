@@ -28,6 +28,9 @@ class ApiClient {
   final Future<String?> Function() getToken;
   final http.Client _client;
 
+  /// Startup / shell data fetches must fail fast if the API is unreachable.
+  static const Duration shellTimeout = Duration(seconds: 4);
+
   http.Client get httpClient => _client;
 
   Future<Map<String, String>> _headers() async {
@@ -38,10 +41,18 @@ class ApiClient {
     };
   }
 
-  Future<List<Conversation>> listConversations() async {
-    final res = await _client.get(
+  Future<http.Response> _get(Uri uri, {Duration? timeout}) async {
+    final future = _client.get(uri, headers: await _headers());
+    if (timeout == null) return future;
+    return future.timeout(timeout);
+  }
+
+  Future<List<Conversation>> listConversations({
+    Duration timeout = shellTimeout,
+  }) async {
+    final res = await _get(
       Uri.parse('${AppConfig.apiBaseUrl}/v1/conversations'),
-      headers: await _headers(),
+      timeout: timeout,
     );
     _ensureOk(res);
     final body = jsonDecode(res.body) as Map<String, dynamic>;
@@ -62,12 +73,15 @@ class ApiClient {
     return Conversation.fromJson(body['conversation'] as Map<String, dynamic>);
   }
 
-  Future<List<ChatMessage>> listMessages(String conversationId) async {
-    final res = await _client.get(
+  Future<List<ChatMessage>> listMessages(
+    String conversationId, {
+    Duration timeout = shellTimeout,
+  }) async {
+    final res = await _get(
       Uri.parse(
         '${AppConfig.apiBaseUrl}/v1/conversations/$conversationId/messages',
       ),
-      headers: await _headers(),
+      timeout: timeout,
     );
     _ensureOk(res);
     final body = jsonDecode(res.body) as Map<String, dynamic>;
@@ -77,10 +91,10 @@ class ApiClient {
         .toList();
   }
 
-  Future<UsageResponse> getUsage() async {
-    final res = await _client.get(
+  Future<UsageResponse> getUsage({Duration timeout = shellTimeout}) async {
+    final res = await _get(
       Uri.parse('${AppConfig.apiBaseUrl}/v1/usage'),
-      headers: await _headers(),
+      timeout: timeout,
     );
     _ensureOk(res);
     final body = jsonDecode(res.body) as Map<String, dynamic>;
