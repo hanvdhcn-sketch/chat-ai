@@ -166,7 +166,7 @@ export function buildOrbitaQuotaSystemPrompt(
       'LUÔN trả lời bằng ngôn ngữ của tin nhắn người dùng gần nhất (ví dụ tiếng Việt → trả lời tiếng Việt). Không dùng mẫu tiếng Anh cố định khi người dùng viết tiếng Việt.',
       'Bạn CÓ THỂ tìm kiếm web qua công cụ khi cần thông tin thời gian thực (tin tức, giá, sự kiện mới) — nhưng KHÔNG dùng web search để biết giờ hiện tại; dùng khối Thời gian hiện tại bên dưới.',
       'Khi nói về hạn mức tin nhắn, quota, gói, nâng cấp, model AI, độ mạnh model, số tin còn lại, thời điểm reset, hoặc giới hạn tải ảnh: chỉ dùng số liệu Orbita bên dưới — không nêu xAI.com, Grok.com Premium, SuperGrok hay gói vendor khác. Dịch các số liệu này sang ngôn ngữ người dùng; giữ đúng con số.',
-      'QUAN TRỌNG về model: Miễn phí và Pro KHÔNG dùng cùng một model. Miễn phí dùng model nhẹ/rẻ hơn; Pro dùng model mạnh hơn — ngoài hạn mức cao hơn. Không bao giờ nói Free và Pro dùng chung một model xAI hay Pro chỉ tăng quota.',
+      'QUAN TRỌNG về model: Miễn phí và Pro KHÔNG dùng cùng một model. Miễn phí dùng model nhẹ/rẻ hơn; Pro dùng Grok mạnh/ổn định nhất hiện tại (không phải luôn cố định một số phiên bản như 4.7) — ngoài hạn mức cao hơn. Không bao giờ nói Free và Pro dùng chung một model xAI hay Pro chỉ tăng quota.',
       'Tìm kiếm web tính như tin nhắn chat bình thường theo hạn mức Orbita bên dưới (không có quota tìm kiếm riêng).',
       '',
       clockBlock,
@@ -186,11 +186,11 @@ export function buildOrbitaQuotaSystemPrompt(
       );
     } else if (planTier === 'free') {
       lines.push(
-        'Người dùng Miễn phí có thể nâng cấp Orbita Pro ngay trong app (nút Go Pro / Nâng cấp Pro — Microsoft Store xử lý thanh toán in-app). Không bảo họ phải thoát app rồi tìm “Orbita Pro” trên Microsoft Store. Pro dùng model Grok mạnh hơn và có hạn mức tin nhắn/ảnh/ngày cao hơn.',
+        'Người dùng Miễn phí có thể nâng cấp Orbita Pro ngay trong app (nút Go Pro / Nâng cấp Pro — Microsoft Store xử lý thanh toán in-app). Không bảo họ phải thoát app rồi tìm “Orbita Pro” trên Microsoft Store. Pro dùng Grok mạnh/ổn định nhất hiện tại (không phải luôn một số phiên bản cố định) và có hạn mức tin nhắn/ảnh/ngày cao hơn.',
       );
     } else {
       lines.push(
-        'Pro dùng model Grok mạnh hơn gói Miễn phí và có hạn mức tin nhắn/ảnh/ngày cao hơn.',
+        'Pro dùng Grok mạnh/ổn định nhất hiện tại (mạnh hơn gói Miễn phí) và có hạn mức tin nhắn/ảnh/ngày cao hơn — không nói Pro “luôn là grok-4.7” khi vendor id đã đổi.',
       );
     }
 
@@ -203,7 +203,7 @@ export function buildOrbitaQuotaSystemPrompt(
     "ALWAYS reply in the same language as the user's latest message (e.g. Vietnamese → reply in Vietnamese). Do not dump a fixed English template when the user writes in another language.",
     'You CAN search the live web via tools when you need current facts (news, prices, recent events) — but do NOT use web search to learn the current time; use the Current time block below.',
     'When users ask about message limits, quotas, plans, upgrades, AI model strength, which model Free/Pro use, remaining messages, resets, or image upload limits, answer ONLY with Orbita facts below — never xAI.com, Grok.com Premium, SuperGrok, or other vendor plans. Translate these facts into the user\'s language; keep the numbers accurate.',
-    'IMPORTANT about models: Free and Pro do NOT share the same model. Free uses a lighter/cheaper Grok model; Pro uses a stronger Grok model — in addition to higher quotas. Never say Free and Pro use the same xAI model or that Pro only raises limits.',
+    'IMPORTANT about models: Free and Pro do NOT share the same model. Free uses a lighter/cheaper Grok model; Pro uses the current strongest stable Grok (not permanently hard-coded to one version such as 4.7) — in addition to higher quotas. Never say Free and Pro use the same xAI model or that Pro only raises limits.',
     'Web search counts as a normal Orbita chat message under the quotas below (no separate search quota).',
     '',
     clockBlock,
@@ -223,11 +223,11 @@ export function buildOrbitaQuotaSystemPrompt(
     );
   } else if (planTier === 'free') {
     lines.push(
-      'Free users can upgrade to Orbita Pro in-app (Go Pro / Upgrade to Pro — Microsoft Store handles payment inside the app). Do NOT tell them to leave the app and search for “Orbita Pro” in the Microsoft Store. Pro includes a stronger Grok model plus a higher daily message and image allowance.',
+      'Free users can upgrade to Orbita Pro in-app (Go Pro / Upgrade to Pro — Microsoft Store handles payment inside the app). Do NOT tell them to leave the app and search for “Orbita Pro” in the Microsoft Store. Pro includes the current strongest stable Grok (not always a fixed version like 4.7) plus a higher daily message and image allowance.',
     );
   } else {
     lines.push(
-      'Pro includes a stronger Grok model and higher daily message and image allowances than Free.',
+      'Pro includes the current strongest stable Grok (stronger than Free) and higher daily message and image allowances — do not claim Pro is “always grok-4.7” if the configured vendor id has moved on.',
     );
   }
 

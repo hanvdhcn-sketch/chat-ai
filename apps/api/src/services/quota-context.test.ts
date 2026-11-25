@@ -73,7 +73,8 @@ describe('quota-context', () => {
     assert.match(prompt, /not xAI\/Grok\.com|never .*SuperGrok|never xAI/i);
     assert.match(prompt, /Free and Pro do NOT share the same model/);
     assert.match(prompt, /lighter\/cheaper/);
-    assert.match(prompt, /stronger Grok model/);
+    assert.match(prompt, /current strongest stable Grok/);
+    assert.match(prompt, /not permanently hard-coded/);
     assert.match(prompt, /grok-4\.3/);
     assert.match(prompt, /grok-4\.7/);
     assert.match(prompt, /Never say Free and Pro use the same/);
@@ -113,7 +114,7 @@ describe('quota-context', () => {
     assert.match(prompt, /không nêu xAI\.com/);
     assert.match(prompt, /KHÔNG dùng cùng một model/);
     assert.match(prompt, /model nhẹ\/rẻ hơn/);
-    assert.match(prompt, /model mạnh hơn/);
+    assert.match(prompt, /mạnh\/ổn định nhất hiện tại/);
     assert.match(prompt, /grok-4\.3/);
     assert.match(prompt, /grok-4\.7/);
     assert.doesNotMatch(prompt, /ALWAYS reply in the same language/);

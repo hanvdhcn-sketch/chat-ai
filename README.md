@@ -71,8 +71,9 @@ flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3001
 | `DATABASE_URL` | API | Postgres |
 | `REDIS_URL` | API | Rate limit / usage cache |
 | `XAI_API_KEY` | API only | Grok inference + native web_search (Responses API) |
-| `XAI_GROK_MODEL` / `XAI_GROK_FAST_MODEL` | API | Optional Grok model ids |
-| `XAI_GROK_VISION_MODEL` | API | Multimodal / image chats (default `grok-4.7`) |
+| `XAI_GROK_MODEL` | API | Pro flagship vendor id (default: current strongest stable, e.g. `grok-4.7`). Bump + redeploy when a new flagship ships — no code change. |
+| `XAI_GROK_FAST_MODEL` | API | Free cheaper vendor id (default `grok-4.3`) |
+| `XAI_GROK_VISION_MODEL` | API | Multimodal / image chats (default tracks Pro flagship) |
 | `XAI_WEB_SEARCH_MODE` | API | `xai` (default) / `local` / `off` |
 | `WEB_SEARCH_TIMEOUT_MS` | API | Search-enabled request timeout (default 90000) |
 | `BRAVE_SEARCH_API_KEY` | API only | Optional; used when `XAI_WEB_SEARCH_MODE=local` |
@@ -93,7 +94,7 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 | Messages/day | 60 | 400 |
 | Images/message | 3 (≤5 MB each) | 8 (≤8 MB each) |
 | Images/day | 8 | 20 |
-| Models | Grok Fast (`grok-4.3`, lighter/cheaper) | Grok (`grok-4.7`, stronger) |
+| Models | Grok Fast (`grok-fast` → `XAI_GROK_FAST_MODEL`, default `grok-4.3`) | Grok (`grok` → `XAI_GROK_MODEL`, current strongest stable; default `grok-4.7`) |
 | Branding | “Powered by Orbita” badge | Hidden |
 | UI languages | VI + EN | VI + EN |
 

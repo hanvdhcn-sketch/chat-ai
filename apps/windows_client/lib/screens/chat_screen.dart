@@ -121,6 +121,14 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  /// After Store verify, refresh /v1/me + usage so subsequent chats use Pro model.
+  Future<void> _refreshTierAfterBilling() async {
+    final auth = context.read<AuthService>();
+    await auth.refreshMe();
+    if (!mounted) return;
+    await _bootstrap();
+  }
+
   Future<void> _upgradePro() async {
     if (_billingBusy) return;
     setState(() {
@@ -129,9 +137,8 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     try {
       final result = await _storeBilling.purchasePro();
-      final auth = context.read<AuthService>();
-      await auth.refreshMe();
-      await _bootstrap();
+      // Always re-fetch tier/usage after verify so Pro model + quotas apply next turn.
+      await _refreshTierAfterBilling();
       if (!mounted) return;
       final loc = AppLocalizations.of(context);
       final msg = result.ok
@@ -278,11 +285,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _restorePurchasesAction() async {
-    final auth = context.read<AuthService>();
     try {
       final result = await _storeBilling.restorePurchases();
-      await auth.refreshMe();
-      await _bootstrap();
+      await _refreshTierAfterBilling();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
