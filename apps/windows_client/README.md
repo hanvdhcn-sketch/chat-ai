@@ -39,11 +39,11 @@ flutter run -d windows \
 
 - `StoreBillingService` (`lib/services/store_billing.dart`) owns purchase + restore.
 - **Native path:** method channel `chatai/store_billing` → WinRT `Windows.Services.Store.StoreContext`
-  (`RequestPurchaseAsync`, `GetAppLicenseAsync`, User Store ID for Collections).
+  (runner `store_billing_plugin.cpp`: `RequestPurchaseAsync`, `GetAppLicenseAsync`, optional Collections id).
 - **`in_app_purchase` is not the primary path** on Windows Store.
-- Until the C++/WinRT bridge is linked in the runner, missing-plugin → **explicit stub**;
-  Upgrade CTA still calls `POST /v1/billing/store/verify` with `stubGrantPro` (API allows only outside production).
-- Restore purchases re-reads license (or stub) and re-verifies with the API.
+- Go Pro opens the **in-app** Store purchase UI (requires MSIX + Partner Center subscription `pro_monthly` for real payment).
+- Dev-only API stub grant: `--dart-define=ALLOW_STORE_STUB_GRANT=true` (Release never stubs silently).
+- Restore re-reads Store add-on licenses and re-verifies with `POST /v1/billing/store/verify`.
 - Manage / cancel: Microsoft Store account UI; app re-verifies on restore / next launch.
 
 ## Free badge / i18n

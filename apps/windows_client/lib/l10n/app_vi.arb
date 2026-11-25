@@ -43,7 +43,7 @@
   "emptyChat": "Bắt đầu hội thoại",
   "streaming": "Đang suy nghĩ…",
   "stop": "Dừng",
-  "storeStubHint": "Mua Store đang stub ngoài gói MS Store — Pro được cấp qua API stub.",
-  "storePurchaseHint": "Mua Pro qua Microsoft Store. Ngoài gói Store sẽ dùng stub rõ ràng.",
+  "storeStubHint": "Stub cấp Pro chỉ khi bật ALLOW_STORE_STUB_GRANT (dev). Bản thường mua in-app qua Store.",
+  "storePurchaseHint": "Mua Pro ngay trong app qua Microsoft Store (Go Pro). Store xử lý thanh toán trong Orbita.",
   "restorePurchases": "Khôi phục giao dịch"
 }

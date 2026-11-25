@@ -43,7 +43,7 @@
   "emptyChat": "Start a conversation",
   "streaming": "Thinking…",
   "stop": "Stop",
-  "storeStubHint": "Store purchase stubbed outside an MS Store package — Pro granted via API stub.",
-  "storePurchaseHint": "Buy Pro via Microsoft Store. Outside Store packaging this uses a clear stub.",
+  "storeStubHint": "Dev-only Store stub grant (ALLOW_STORE_STUB_GRANT). Normal builds use in-app Store purchase.",
+  "storePurchaseHint": "Buy Pro in-app via Microsoft Store (Go Pro). Store processes payment inside Orbita.",
   "restorePurchases": "Restore purchases"
 }

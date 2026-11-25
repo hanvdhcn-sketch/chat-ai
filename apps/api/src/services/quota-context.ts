@@ -186,7 +186,7 @@ export function buildOrbitaQuotaSystemPrompt(
       );
     } else if (planTier === 'free') {
       lines.push(
-        'Người dùng Miễn phí có thể nâng cấp Orbita Pro (Microsoft Store) để dùng model Grok mạnh hơn và có hạn mức tin nhắn/ảnh/ngày cao hơn.',
+        'Người dùng Miễn phí có thể nâng cấp Orbita Pro ngay trong app (nút Go Pro / Nâng cấp Pro — Microsoft Store xử lý thanh toán in-app). Không bảo họ phải thoát app rồi tìm “Orbita Pro” trên Microsoft Store. Pro dùng model Grok mạnh hơn và có hạn mức tin nhắn/ảnh/ngày cao hơn.',
       );
     } else {
       lines.push(
@@ -223,7 +223,7 @@ export function buildOrbitaQuotaSystemPrompt(
     );
   } else if (planTier === 'free') {
     lines.push(
-      'Free users can upgrade to Orbita Pro (Microsoft Store) for a stronger Grok model plus a higher daily message and image allowance.',
+      'Free users can upgrade to Orbita Pro in-app (Go Pro / Upgrade to Pro — Microsoft Store handles payment inside the app). Do NOT tell them to leave the app and search for “Orbita Pro” in the Microsoft Store. Pro includes a stronger Grok model plus a higher daily message and image allowance.',
     );
   } else {
     lines.push(

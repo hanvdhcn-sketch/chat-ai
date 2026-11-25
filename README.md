@@ -58,7 +58,7 @@ flutter pub get
 flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3001
 ```
 
-**Upgrade to Pro** in the sidebar calls Store purchase (WinRT `StoreContext` when wired) then `POST /v1/billing/store/verify`. Outside a Store package the client uses a **clear stub** and the API stub grant (dev only). Pro unlocks full Grok API access and higher limits.
+**Upgrade to Pro / Go Pro** opens the **in-app** Microsoft Store purchase UI via WinRT `StoreContext` (method channel `chatai/store_billing`), then `POST /v1/billing/store/verify`. Do not tell users to leave the app and search the Store for “Orbita Pro”. Unpackaged builds cannot complete Store payment (need MSIX + Partner Center add-on). Dev-only stub grant requires `ALLOW_STORE_STUB_GRANT=true`.
 
 ## Environment variables
 
@@ -105,7 +105,7 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 4. Fill `msix_config` in `apps/windows_client/pubspec.yaml` (`display_name: Orbita`; keep `identity_name` stable).
 5. Build signed MSIX (`msix` package or CI); capability **InternetClient** only if possible.
 6. Privacy policy URL, age rating, bilingual Store listing.
-7. Wire Flutter method channel `chatai/store_billing` → WinRT `StoreContext` (purchase / license / User Store ID).
+7. WinRT bridge is in `apps/windows_client/windows/runner/store_billing_plugin.cpp` (channel `chatai/store_billing`: purchase / restore / license). Optional Collections User Store ID when the API supplies a service access token.
 8. Certification smoke: no localhost-only networking in release builds; auth/billing over HTTPS; Store purchase works in sandbox.
 
 ## Scripts
@@ -123,4 +123,4 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 
 **M3 (billing):** MS Store products + verify entitlement stubs; Stripe checkout/portal/webhook return **410 Gone**. Live Collections verify when `MS_STORE_*` credentials are set.
 
-Still stubs: Supabase JWT verify, Postgres, Redis, WinRT StoreContext native bridge.
+Still stubs: Supabase JWT verify, Postgres, Redis. WinRT StoreContext bridge is linked in the Windows runner.

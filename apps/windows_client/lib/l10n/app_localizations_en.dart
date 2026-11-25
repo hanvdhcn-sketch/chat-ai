@@ -63,7 +63,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String monthlyImageAllowanceReached(String resetsAt) {
-    return "You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 8 per day) until $resetsAt. Text chat is unaffected.";
+    return 'You\'ve reached this month\'s image allowance. Image uploads temporarily use Free limits (3 per message, 8 per day) until $resetsAt. Text chat is unaffected.';
   }
 
   @override
@@ -90,11 +90,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storeStubHint =>
-      'Store purchase stubbed outside an MS Store package — Pro granted via API stub.';
+      'Dev-only Store stub grant (ALLOW_STORE_STUB_GRANT). Normal builds use in-app Store purchase.';
 
   @override
   String get storePurchaseHint =>
-      'Buy Pro via Microsoft Store. Outside Store packaging this uses a clear stub.';
+      'Buy Pro in-app via Microsoft Store (Go Pro). Store processes payment inside Orbita.';
 
   @override
   String get restorePurchases => 'Restore purchases';

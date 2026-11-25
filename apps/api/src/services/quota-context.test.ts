@@ -77,6 +77,8 @@ describe('quota-context', () => {
     assert.match(prompt, /grok-4\.3/);
     assert.match(prompt, /grok-4\.7/);
     assert.match(prompt, /Never say Free and Pro use the same/);
+    assert.match(prompt, /upgrade to Orbita Pro in-app/i);
+    assert.match(prompt, /Do NOT tell them to leave the app and search/i);
     assert.doesNotMatch(prompt, /soft-cap|monthly image allowance/i);
   });
 

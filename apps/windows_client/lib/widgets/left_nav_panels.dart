@@ -625,7 +625,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
               _SettingsTile(
                 icon: Icons.restore_rounded,
                 title: loc.restorePurchases,
-                subtitle: 'Microsoft Store / stub restore',
+                subtitle: 'Re-check Microsoft Store Pro license',
                 trailing: TextButton(
                   onPressed: _restoring
                       ? null
