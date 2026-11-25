@@ -53,10 +53,22 @@ flutter run -d windows \
 
 ## MSIX / Store
 
-```bash
-flutter pub run msix:create
+1. In Partner Center → app → **Product identity**, copy:
+   - Package/Identity **Name** → `msix_config.identity_name`
+   - Package/Identity **Publisher** (`CN=…`) → `msix_config.publisher`
+   - **Publisher display name** → `msix_config.publisher_display_name`
+2. Keep `display_name: Orbita`. Create subscription add-on Store ID / product id **`pro_monthly`**.
+3. Build Store package (output: `dist/msix/Orbita.msix`):
+
+```powershell
+cd apps/windows_client
+powershell -ExecutionPolicy Bypass -File .\scripts\build_store_msix.ps1
+# or:
+dart run msix:create --store `
+  --windows-build-args="--dart-define=MS_STORE_PRO_PRODUCT_ID=pro_monthly" `
+  --output-path=..\..\dist\msix --output-name=Orbita
 ```
 
-Fill `msix_config` in `pubspec.yaml` with Partner Center identity before certification (`display_name: Orbita`).
-Create the **Pro subscription add-on** in Partner Center (SKU must match `MS_STORE_PRO_PRODUCT_ID`).
-See root README for Store + Azure AD Collections notes.
+For production API host: `-ApiBaseUrl https://your-api.example.com` (or pass `--dart-define=API_BASE_URL=…`).
+Upload the `.msix` in Partner Center Packages; Store signs it. Do **not** expect local sideload of a `--store` package without Partner Center association.
+See root README for Azure AD Collections notes.
