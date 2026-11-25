@@ -1,0 +1,55 @@
+{
+  "@@locale": "de",
+  "appTitle": "Orbita",
+  "newChat": "Neuer Chat",
+  "send": "Senden",
+  "messageHint": "Nachricht an Orbita…",
+  "signIn": "Anmelden",
+  "signOut": "Abmelden",
+  "usageRemaining": "Heute noch {remaining} Nachrichten",
+  "@usageRemaining": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "upgradePro": "Auf Pro upgraden",
+  "goPro": "Go Pro",
+  "poweredBy": "Powered by Orbita",
+  "freePlan": "Kostenlos",
+  "proPlan": "Pro",
+  "freeQuotaHint": "Kostenlos: 60 Nachrichten/Tag · bis zu 3 Bilder/Nachricht (5 MB), 8/Tag",
+  "proQuotaHint": "Pro: 400 Nachrichten/Tag · bis zu 8 Bilder/Nachricht (8 MB), 20/Tag",
+  "messageQuotaReached": "Tageslimit für Nachrichten erreicht. Bitte bis zum nächsten Reset ({resetsAt}) warten.",
+  "@messageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "imageQuotaReached": "Tageslimit für Bild-Uploads erreicht. Bitte bis zum nächsten Reset ({resetsAt}) warten.",
+  "@imageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "monthlyImageAllowanceReached": "Monatliches Bildkontingent erreicht. Bis {resetsAt} gelten die Free-Limits (3 pro Nachricht, 8 pro Tag). Text-Chat ist nicht betroffen.",
+  "@monthlyImageAllowanceReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "conversations": "Unterhaltungen",
+  "settings": "Einstellungen",
+  "language": "Sprache",
+  "languagePickerHint": "Anzeigesprache der App wählen",
+  "searchChats": "Chats suchen",
+  "library": "Bibliothek",
+  "tools": "Werkzeuge",
+  "about": "Info",
+  "stubAuthHint": "Dev-Auth nutzt Stub-Tokens, bis Supabase angebunden ist.",
+  "emptyChat": "Unterhaltung starten",
+  "streaming": "Denke nach…",
+  "stop": "Stopp",
+  "storeStubHint": "Nur-Dev Store-Stub-Freigabe (ALLOW_STORE_STUB_GRANT). Normale Builds nutzen In-App-Kauf.",
+  "storePurchaseHint": "Pro in der App über den Microsoft Store kaufen (Go Pro). Der Store verarbeitet die Zahlung in Orbita.",
+  "restorePurchases": "Käufe wiederherstellen"
+}

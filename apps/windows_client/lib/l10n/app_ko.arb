@@ -1,0 +1,55 @@
+{
+  "@@locale": "ko",
+  "appTitle": "Orbita",
+  "newChat": "새 채팅",
+  "send": "보내기",
+  "messageHint": "Orbita에 메시지…",
+  "signIn": "로그인",
+  "signOut": "로그아웃",
+  "usageRemaining": "오늘 메시지 {remaining}개 남음",
+  "@usageRemaining": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "upgradePro": "Pro로 업그레이드",
+  "goPro": "Go Pro",
+  "poweredBy": "Powered by Orbita",
+  "freePlan": "무료",
+  "proPlan": "Pro",
+  "freeQuotaHint": "무료: 하루 60메시지 · 메시지당 최대 3이미지(5 MB), 하루 8장",
+  "proQuotaHint": "Pro: 하루 400메시지 · 메시지당 최대 8이미지(8 MB), 하루 20장",
+  "messageQuotaReached": "일일 메시지 한도에 도달했습니다. 다음 초기화({resetsAt})까지 기다려 주세요.",
+  "@messageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "imageQuotaReached": "일일 이미지 업로드 한도에 도달했습니다. 다음 초기화({resetsAt})까지 기다려 주세요.",
+  "@imageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "monthlyImageAllowanceReached": "이번 달 이미지 한도에 도달했습니다. {resetsAt}까지 이미지는 무료 한도(메시지당 3장, 하루 8장)를 사용합니다. 텍스트 채팅은 영향 없습니다.",
+  "@monthlyImageAllowanceReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "conversations": "대화",
+  "settings": "설정",
+  "language": "언어",
+  "languagePickerHint": "앱 표시 언어 선택",
+  "searchChats": "채팅 검색",
+  "library": "라이브러리",
+  "tools": "도구",
+  "about": "정보",
+  "stubAuthHint": "Supabase 연동 전까지 개발용 스텁 토큰을 사용합니다.",
+  "emptyChat": "대화를 시작하세요",
+  "streaming": "생각 중…",
+  "stop": "중지",
+  "storeStubHint": "개발 전용 Store stub(ALLOW_STORE_STUB_GRANT). 일반 빌드는 인앱 구매를 사용합니다.",
+  "storePurchaseHint": "Microsoft Store 인앱 구매로 Pro를 구매하세요(Go Pro). 결제는 Orbita 내에서 처리됩니다.",
+  "restorePurchases": "구매 복원"
+}

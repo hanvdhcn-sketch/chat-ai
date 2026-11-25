@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/attachment.dart';
 import '../models/models.dart';
 import '../services/config.dart';
+import '../services/locale_preference.dart';
 import '../theme/app_theme.dart';
 import 'right_panel.dart';
 
@@ -482,7 +483,7 @@ class _ToolsBody extends StatelessWidget {
 class SettingsPanelArgs {
   const SettingsPanelArgs({
     required this.localeCode,
-    required this.onToggleLocale,
+    required this.onLocaleChanged,
     required this.onClearLocalData,
     required this.onOpenAbout,
     required this.showUpgrade,
@@ -493,7 +494,7 @@ class SettingsPanelArgs {
   });
 
   final String localeCode;
-  final VoidCallback onToggleLocale;
+  final ValueChanged<String> onLocaleChanged;
   final Future<void> Function() onClearLocalData;
   final VoidCallback onOpenAbout;
   final bool showUpgrade;
@@ -539,7 +540,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final args = widget.args;
-    final isVi = _localeCode == 'vi';
+    final selected = LocalePreference.resolve(_localeCode);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
@@ -583,18 +584,25 @@ class _SettingsBodyState extends State<_SettingsBody> {
           title: loc.language,
           child: _SettingsTile(
             icon: Icons.language_rounded,
-            title: isVi ? 'Tiếng Việt' : 'English',
-            subtitle: isVi
-                ? 'Đổi sang English'
-                : 'Switch to Tiếng Việt',
-            trailing: FilledButton.tonal(
-              onPressed: () {
-                args.onToggleLocale();
-                setState(() {
-                  _localeCode = _localeCode == 'en' ? 'vi' : 'en';
-                });
-              },
-              child: Text(isVi ? 'EN' : 'VI'),
+            title: selected.nativeLabel,
+            subtitle: loc.languagePickerHint,
+            trailing: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selected.code,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                onChanged: (code) {
+                  if (code == null) return;
+                  setState(() => _localeCode = code);
+                  args.onLocaleChanged(code);
+                },
+                items: [
+                  for (final lang in kAppLanguages)
+                    DropdownMenuItem(
+                      value: lang.code,
+                      child: Text(lang.pickerLabel),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -619,7 +627,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
                   subtitle: loc.storePurchaseHint,
                   trailing: FilledButton(
                     onPressed: args.billingBusy ? null : args.onUpgrade,
-                    child: Text(args.billingBusy ? '…' : 'Go Pro'),
+                    child: Text(args.billingBusy ? '…' : loc.goPro),
                   ),
                 ),
               _SettingsTile(

@@ -13,6 +13,7 @@ import '../services/api_client.dart';
 import '../services/attachment_reader.dart';
 import '../services/auth_service.dart';
 import '../services/config.dart';
+import '../services/locale_preference.dart';
 import '../services/startup_clock.dart';
 import '../services/store_billing.dart';
 import '../theme/app_theme.dart';
@@ -77,7 +78,6 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _showSample = true;
   bool _dragging = false;
   String? _error;
-  Locale _localeOverride = const Locale('en');
   final List<PendingAttachment> _attachments = [];
   /// Local title/snippet index for Search + Library (no cloud sync).
   final Map<String, String> _snippets = {};
@@ -255,13 +255,11 @@ class _ChatScreenState extends State<ChatScreen> {
         text.length <= 140 ? text : '${text.substring(0, 137)}…';
   }
 
-  void _toggleLocale() {
-    setState(() {
-      _localeOverride = _localeOverride.languageCode == 'en'
-          ? const Locale('vi')
-          : const Locale('en');
-    });
+  Future<void> _setLocale(String code) async {
+    await context.read<LocalePreference>().setCode(code);
   }
+
+  String get _localeCode => context.read<LocalePreference>().code;
 
   Future<void> _clearLocalData() async {
     if (_streaming) await _stop();
@@ -340,8 +338,8 @@ class _ChatScreenState extends State<ChatScreen> {
         showSettingsPanel(
           context: context,
           args: SettingsPanelArgs(
-            localeCode: _localeOverride.languageCode,
-            onToggleLocale: _toggleLocale,
+            localeCode: _localeCode,
+            onLocaleChanged: _setLocale,
             onClearLocalData: _clearLocalData,
             onOpenAbout: _openAbout,
             showUpgrade: !(auth.user?.isPro ?? false),
@@ -758,7 +756,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final stream = _api.streamMessage(
       conversationId: activeConvo.id,
       content: text,
-      locale: _localeOverride.languageCode,
+      locale: _localeCode,
       attachments: attachmentPayload,
     );
     _cancelStream = stream.cancel;
@@ -1031,42 +1029,35 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
+    final localePref = context.watch<LocalePreference>();
     final showUpgrade = !(auth.user?.isPro ?? false);
 
-    return Localizations.override(
-      context: context,
-      locale: _localeOverride,
-      child: Builder(
-        builder: (context) {
-          return Scaffold(
-            backgroundColor: AppTheme.surface,
-            body: Row(
-              children: [
-                LeftNav(
-                  onNewChat: _newChat,
-                  onUpgrade: _upgradePro,
-                  billingBusy: _billingBusy,
-                  showUpgrade: showUpgrade,
-                  onNavTap: _handleNavTap,
-                ),
-                Expanded(child: _buildCenter(auth)),
-                RightPanel(
-                  conversations: _conversations,
-                  activeId: _active?.id,
-                  onSelect: _openConversation,
-                  onQuickTool: _applyQuickTool,
-                  onSeeAll: () => _handleNavTap('Library'),
-                  onMoreTools: () => _handleNavTap('Tools'),
-                ),
-              ],
-            ),
-          );
-        },
+    return Scaffold(
+      backgroundColor: AppTheme.surface,
+      body: Row(
+        children: [
+          LeftNav(
+            onNewChat: _newChat,
+            onUpgrade: _upgradePro,
+            billingBusy: _billingBusy,
+            showUpgrade: showUpgrade,
+            onNavTap: _handleNavTap,
+          ),
+          Expanded(child: _buildCenter(auth, localePref.code)),
+          RightPanel(
+            conversations: _conversations,
+            activeId: _active?.id,
+            onSelect: _openConversation,
+            onQuickTool: _applyQuickTool,
+            onSeeAll: () => _handleNavTap('Library'),
+            onMoreTools: () => _handleNavTap('Tools'),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCenter(AuthService auth) {
+  Widget _buildCenter(AuthService auth, String localeCode) {
     final msgs = _displayMessages;
     return DropTarget(
       acceptedKinds: const {DropItemKind.file},
@@ -1103,8 +1094,12 @@ class _ChatScreenState extends State<ChatScreen> {
                   model: _selectedModel,
                   streaming: _streaming,
                   usage: _usage,
-                  onToggleLocale: _toggleLocale,
-                  localeCode: _localeOverride.languageCode,
+                  onCycleLocale: () {
+                    final i = kAppLanguages.indexWhere((l) => l.code == localeCode);
+                    final next = kAppLanguages[(i + 1) % kAppLanguages.length];
+                    unawaited(_setLocale(next.code));
+                  },
+                  localeCode: localeCode,
                   onRestore: () {
                     _restorePurchasesAction();
                   },
@@ -1154,7 +1149,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   streaming: _streaming,
                   onSend: _send,
                   onStop: _stop,
-                  localeCode: _localeOverride.languageCode,
+                  localeCode: localeCode,
                   attachments: _attachments,
                   onRemoveAttachment: (id) {
                     setState(
@@ -1239,7 +1234,7 @@ class _ChatHeader extends StatelessWidget {
     required this.model,
     required this.streaming,
     required this.usage,
-    required this.onToggleLocale,
+    required this.onCycleLocale,
     required this.localeCode,
     required this.onRestore,
     required this.onSwitchTier,
@@ -1248,7 +1243,7 @@ class _ChatHeader extends StatelessWidget {
   final UiModel model;
   final bool streaming;
   final UsageSnapshot? usage;
-  final VoidCallback onToggleLocale;
+  final VoidCallback onCycleLocale;
   final String localeCode;
   final VoidCallback onRestore;
   final ValueChanged<String> onSwitchTier;
@@ -1314,14 +1309,14 @@ class _ChatHeader extends StatelessWidget {
           PopupMenuButton<String>(
             tooltip: 'More',
             onSelected: (v) {
-              if (v == 'locale') onToggleLocale();
+              if (v == 'locale') onCycleLocale();
               if (v == 'restore') onRestore();
               if (v == 'free' || v == 'pro') onSwitchTier(v);
             },
             itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'locale',
-                child: Text('Language: ${localeCode.toUpperCase()}'),
+                child: Text('Language: $localeCode'),
               ),
               const PopupMenuItem(
                 value: 'restore',

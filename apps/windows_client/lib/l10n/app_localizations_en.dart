@@ -35,6 +35,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get upgradePro => 'Upgrade to Pro';
 
   @override
+  String get goPro => 'Go Pro';
+
+  @override
   String get poweredBy => 'Powered by Orbita';
 
   @override
@@ -74,6 +77,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get language => 'Language';
+
+  @override
+  String get languagePickerHint => 'Choose the app display language';
+
+  @override
+  String get searchChats => 'Search Chats';
+
+  @override
+  String get library => 'Library';
+
+  @override
+  String get tools => 'Tools';
+
+  @override
+  String get about => 'About';
 
   @override
   String get stubAuthHint =>

@@ -1,0 +1,55 @@
+{
+  "@@locale": "hi",
+  "appTitle": "Orbita",
+  "newChat": "नई चैट",
+  "send": "भेजें",
+  "messageHint": "Orbita को संदेश…",
+  "signIn": "साइन इन",
+  "signOut": "साइन आउट",
+  "usageRemaining": "आज {remaining} संदेश शेष",
+  "@usageRemaining": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "upgradePro": "Pro में अपग्रेड करें",
+  "goPro": "Go Pro",
+  "poweredBy": "Powered by Orbita",
+  "freePlan": "मुफ़्त",
+  "proPlan": "Pro",
+  "freeQuotaHint": "मुफ़्त: 60 संदेश/दिन · प्रति संदेश अधिकतम 3 छवियाँ (5 MB), 8/दिन",
+  "proQuotaHint": "Pro: 400 संदेश/दिन · प्रति संदेश अधिकतम 8 छवियाँ (8 MB), 20/दिन",
+  "messageQuotaReached": "दैनिक संदेश सीमा पूरी हो गई। जारी रखने के लिए अगले रीसेट ({resetsAt}) तक प्रतीक्षा करें।",
+  "@messageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "imageQuotaReached": "दैनिक छवि अपलोड सीमा पूरी हो गई। और अपलोड करने के लिए अगले रीसेट ({resetsAt}) तक प्रतीक्षा करें।",
+  "@imageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "monthlyImageAllowanceReached": "आपने इस महीने की छवि सीमा पूरी कर ली है। {resetsAt} तक अपलोड मुफ़्त सीमा (प्रति संदेश 3, प्रति दिन 8) का उपयोग करेंगे। टेक्स्ट चैट प्रभावित नहीं होगी।",
+  "@monthlyImageAllowanceReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "conversations": "बातचीत",
+  "settings": "सेटिंग्स",
+  "language": "भाषा",
+  "languagePickerHint": "ऐप प्रदर्शन भाषा चुनें",
+  "searchChats": "चैट खोजें",
+  "library": "लाइब्रेरी",
+  "tools": "टूल्स",
+  "about": "परिचय",
+  "stubAuthHint": "Supabase जुड़ने तक डेव ऑथ स्टब टोकन उपयोग करता है।",
+  "emptyChat": "बातचीत शुरू करें",
+  "streaming": "सोच रहा है…",
+  "stop": "रोकें",
+  "storeStubHint": "केवल डेव Store stub अनुदान (ALLOW_STORE_STUB_GRANT)। सामान्य बिल्ड इन-ऐप खरीद उपयोग करते हैं।",
+  "storePurchaseHint": "Microsoft Store के ज़रिए ऐप में Pro खरीदें (Go Pro)। Store भुगतान Orbita में प्रोसेस करता है।",
+  "restorePurchases": "खरीदारी पुनर्स्थापित करें"
+}

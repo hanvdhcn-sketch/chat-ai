@@ -1,0 +1,55 @@
+{
+  "@@locale": "zh",
+  "appTitle": "Orbita",
+  "newChat": "新对话",
+  "send": "发送",
+  "messageHint": "向 Orbita 发送消息…",
+  "signIn": "登录",
+  "signOut": "退出登录",
+  "usageRemaining": "今日剩余 {remaining} 条消息",
+  "@usageRemaining": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "upgradePro": "升级到 Pro",
+  "goPro": "开通 Pro",
+  "poweredBy": "由 Orbita 驱动",
+  "freePlan": "免费",
+  "proPlan": "Pro",
+  "freeQuotaHint": "免费：每天 60 条消息 · 每条最多 3 张图（5 MB），每天 8 张",
+  "proQuotaHint": "Pro：每天 400 条消息 · 每条最多 8 张图（8 MB），每天 20 张",
+  "messageQuotaReached": "已达每日消息上限。请等到下次日重置（{resetsAt}）后再继续。",
+  "@messageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "imageQuotaReached": "已达每日图片上传上限。请等到下次日重置（{resetsAt}）后再上传。",
+  "@imageQuotaReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "monthlyImageAllowanceReached": "您已用完本月图片额度。在 {resetsAt} 之前，图片上传将暂时按免费额度（每条 3 张，每天 8 张）。文字聊天不受影响。",
+  "@monthlyImageAllowanceReached": {
+    "placeholders": {
+      "resetsAt": { "type": "String" }
+    }
+  },
+  "conversations": "对话",
+  "settings": "设置",
+  "language": "语言",
+  "languagePickerHint": "选择应用显示语言",
+  "searchChats": "搜索对话",
+  "library": "资料库",
+  "tools": "工具",
+  "about": "关于",
+  "stubAuthHint": "开发版在接入 Supabase 前使用临时令牌。",
+  "emptyChat": "开始对话",
+  "streaming": "思考中…",
+  "stop": "停止",
+  "storeStubHint": "仅开发环境可用的商店 stub 授权（ALLOW_STORE_STUB_GRANT）。正式版通过应用内购买。",
+  "storePurchaseHint": "通过 Microsoft Store 应用内购买 Pro（开通 Pro）。支付在 Orbita 内由商店处理。",
+  "restorePurchases": "恢复购买"
+}
