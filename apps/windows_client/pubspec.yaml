@@ -33,19 +33,9 @@ flutter:
 
 # =============================================================================
 # MSIX / Microsoft Store packaging
-# Before certification upload, replace EVERY PLACEHOLDER_* value below with the
-# exact strings from Partner Center → your app → Product identity
-# (or Package/Identity after you reserve the name):
-#
-#   Partner Center field          → msix_config key
-#   ----------------------------    -----------------
-#   Package/Identity Name         → identity_name
-#   Package/Identity Publisher    → publisher          (full CN=… string)
-#   Publisher display name        → publisher_display_name
-#   (app display name)            → display_name
-#
-# Package Family Name (PFN) is derived by Store from Name + Publisher — do not
-# invent it here. Keep identity_name stable once the app is associated.
+# Identity values below match Partner Center → Product identity (exact strings).
+# Package Family Name is derived by Store from Name + Publisher — expected:
+#   PrecisionToolsLab.OrbitaAI_2h9tr0fqkywqe  (do not invent / hardcode PFN)
 #
 # Build Store package (unsigned; Store signs on upload):
 #   dart run msix:create --store ^
@@ -53,18 +43,17 @@ flutter:
 #     --output-path=..\..\dist\msix --output-name=Orbita
 # Or: powershell -File scripts\build_store_msix.ps1
 #
-# Store note — runFullTrust: Orbita is a full-trust Flutter desktop Win32 app
-# (local files, microphone, network chat). Restricted AppContainer is not viable;
-# request runFullTrust approval in Partner Center submission notes.
+# Store notes:
+# - Device family: Windows 10/11 Desktop (not Xbox/HoloLens/etc.)
+# - runFullTrust: Orbita AI is a full-trust Flutter desktop Win32 app
+#   (local files, microphone, network chat). Restricted AppContainer is not
+#   viable; request runFullTrust approval in Partner Center submission notes.
 # =============================================================================
 msix_config:
   display_name: Orbita AI
-  # Partner Center → Publisher display name (fixed after Partner Center rejection)
   publisher_display_name: Precision Tools Lab
-  # TODO(Partner Center): paste Package/Identity Name (e.g. 12345Publisher.Orbita)
-  identity_name: PLACEHOLDER.Orbita
-  # TODO(Partner Center): paste Package/Identity Publisher exactly (starts with CN=)
-  publisher: CN=PLACEHOLDER-Publisher-GUID
+  identity_name: PrecisionToolsLab.OrbitaAI
+  publisher: CN=97082A87-14EA-4209-8039-A9443BD7AD27
   msix_version: 0.1.0.0
   # true = Store-upload package (unsigned). Sideload/dev: build without --store
   # and/or override via CLI. Default here matches Store target.
