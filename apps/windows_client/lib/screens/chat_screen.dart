@@ -13,6 +13,7 @@ import '../services/api_client.dart';
 import '../services/attachment_reader.dart';
 import '../services/auth_service.dart';
 import '../services/config.dart';
+import '../services/startup_clock.dart';
 import '../services/store_billing.dart';
 import '../theme/app_theme.dart';
 import '../widgets/composer_bar.dart';
@@ -108,7 +109,16 @@ class _ChatScreenState extends State<ChatScreen> {
     final auth = context.read<AuthService>();
     _api = ApiClient(getToken: () async => auth.accessToken);
     _storeBilling = StoreBillingService(api: _api);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+    // Optimistic shell: composer + sample chat before any network round-trip.
+    final demos = _demoConversations();
+    _conversations = demos;
+    _active = demos.first;
+    _showSample = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      StartupClock.mark('chatFirstFrame');
+      unawaited(StartupClock.markReady());
+      unawaited(_bootstrap());
+    });
   }
 
   Future<void> _upgradePro() async {
@@ -141,9 +151,16 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _bootstrap() async {
+    StartupClock.mark('chatBootstrapStart');
     try {
-      final convos = await _api.listConversations();
-      final usageRes = await _api.getUsage();
+      // Parallel shell fetches — never serialize on the critical path.
+      final results = await Future.wait<Object?>([
+        _api.listConversations(),
+        _api.getUsage(),
+      ]);
+      final convos = results[0]! as List<Conversation>;
+      final usageRes = results[1]! as UsageResponse;
+      if (!mounted) return;
       setState(() {
         _conversations = convos.isEmpty ? _demoConversations() : convos;
         _usage = usageRes.usage;
@@ -151,26 +168,31 @@ class _ChatScreenState extends State<ChatScreen> {
         _resetsAt = usageRes.resetsAt;
         _monthlyImageSoftCap = usageRes.monthlyImageSoftCap;
         _error = null;
-      });
-      _maybeNotifyMonthlyImageSoftCap(usageRes.monthlyImageSoftCap);
-      if (convos.isNotEmpty) {
-        await _openConversation(convos.first);
-      } else if (_conversations.isNotEmpty) {
-        setState(() {
+        if (convos.isEmpty) {
           _active = _conversations.first;
           _showSample = true;
           _messages = [];
-        });
+        }
+      });
+      _maybeNotifyMonthlyImageSoftCap(usageRes.monthlyImageSoftCap);
+      StartupClock.mark('chatBootstrapShell');
+      // Defer message hydrate so composer stays interactive immediately.
+      if (convos.isNotEmpty) {
+        unawaited(_openConversation(convos.first));
       }
     } catch (e) {
-      // Offline / API down — still show mockup UI with sample content.
+      // Offline / API down — keep optimistic demo shell already painted.
+      if (!mounted) return;
       setState(() {
-        _conversations = _demoConversations();
-        _active = _conversations.first;
-        _showSample = true;
-        _messages = [];
+        if (_conversations.isEmpty) {
+          _conversations = _demoConversations();
+          _active = _conversations.first;
+          _showSample = true;
+          _messages = [];
+        }
         _error = null;
       });
+      StartupClock.mark('chatBootstrapOffline');
     }
   }
 
