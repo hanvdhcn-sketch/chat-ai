@@ -42,7 +42,7 @@ flutter:
 #   Package/Identity Name         → identity_name
 #   Package/Identity Publisher    → publisher          (full CN=… string)
 #   Publisher display name        → publisher_display_name
-#   (app display name)            → display_name       (keep: Orbita)
+#   (app display name)            → display_name
 #
 # Package Family Name (PFN) is derived by Store from Name + Publisher — do not
 # invent it here. Keep identity_name stable once the app is associated.
@@ -52,14 +52,18 @@ flutter:
 #     --windows-build-args="--dart-define=MS_STORE_PRO_PRODUCT_ID=pro_monthly" ^
 #     --output-path=..\..\dist\msix --output-name=Orbita
 # Or: powershell -File scripts\build_store_msix.ps1
+#
+# Store note — runFullTrust: Orbita is a full-trust Flutter desktop Win32 app
+# (local files, microphone, network chat). Restricted AppContainer is not viable;
+# request runFullTrust approval in Partner Center submission notes.
 # =============================================================================
 msix_config:
-  display_name: Orbita
-  # PLACEHOLDER — paste Publisher display name from Partner Center Product identity
-  publisher_display_name: PLACEHOLDER_PublisherDisplayName
-  # PLACEHOLDER — paste Package/Identity Name (e.g. 12345Publisher.Orbita)
+  display_name: Orbita AI
+  # Partner Center → Publisher display name (fixed after Partner Center rejection)
+  publisher_display_name: Precision Tools Lab
+  # TODO(Partner Center): paste Package/Identity Name (e.g. 12345Publisher.Orbita)
   identity_name: PLACEHOLDER.Orbita
-  # PLACEHOLDER — paste Package/Identity Publisher exactly (starts with CN=)
+  # TODO(Partner Center): paste Package/Identity Publisher exactly (starts with CN=)
   publisher: CN=PLACEHOLDER-Publisher-GUID
   msix_version: 0.1.0.0
   # true = Store-upload package (unsigned). Sideload/dev: build without --store
