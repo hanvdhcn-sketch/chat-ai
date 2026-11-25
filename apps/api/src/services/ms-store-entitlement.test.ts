@@ -98,4 +98,15 @@ describe('ms-store-entitlement', () => {
     assert.equal(result.verified, false);
     assert.equal(result.reason, 'missing_user_store_id');
   });
+
+  it('stub-grants Pro from WinRT clientLicenseActive without userStoreId', async () => {
+    const result = await verifyMsStoreEntitlement(
+      'user_f',
+      { storeProductId: 'pro_monthly', clientLicenseActive: true },
+      { configured: false, nodeEnv: 'development' },
+    );
+    assert.equal(result.planTier, 'pro');
+    assert.equal(result.stub, true);
+    assert.equal(result.reason, 'stub_granted');
+  });
 });

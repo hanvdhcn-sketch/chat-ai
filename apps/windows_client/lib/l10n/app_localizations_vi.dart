@@ -90,11 +90,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get storeStubHint =>
-      'Mua Store đang stub ngoài gói MS Store — Pro được cấp qua API stub.';
+      'Stub cấp Pro chỉ khi bật ALLOW_STORE_STUB_GRANT (dev). Bản thường mua in-app qua Store.';
 
   @override
   String get storePurchaseHint =>
-      'Mua Pro qua Microsoft Store. Ngoài gói Store sẽ dùng stub rõ ràng.';
+      'Mua Pro ngay trong app qua Microsoft Store (Go Pro). Store xử lý thanh toán trong Orbita.';
 
   @override
   String get restorePurchases => 'Khôi phục giao dịch';

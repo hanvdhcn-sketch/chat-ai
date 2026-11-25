@@ -122,9 +122,11 @@ export async function verifyMsStoreEntitlement(
     };
   }
 
+  // Local WinRT GetAppLicenseAsync (clientLicenseActive) is enough for the
+  // non-Collections stub path. userStoreId is required only when Collections
+  // credentials are configured (branch above).
   const grant =
-    body.stubGrantPro === true ||
-    (body.clientLicenseActive === true && Boolean(body.userStoreId?.trim()));
+    body.stubGrantPro === true || body.clientLicenseActive === true;
 
   if (!grant) {
     const existing = getSubscription(userId);

@@ -11,6 +11,7 @@ add_executable(${BINARY_NAME} WIN32
   "main.cpp"
   "utils.cpp"
   "win32_window.cpp"
+  "store_billing_plugin.cpp"
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
   "Runner.rc"
   "runner.exe.manifest"
@@ -19,6 +20,10 @@ add_executable(${BINARY_NAME} WIN32
 # Apply the standard set of build settings. This can be removed for applications
 # that need different build settings.
 apply_standard_settings(${BINARY_NAME})
+
+# C++/WinRT StoreContext uses exceptions + coroutines.
+target_compile_definitions(${BINARY_NAME} PRIVATE "_HAS_EXCEPTIONS=1")
+target_compile_options(${BINARY_NAME} PRIVATE /await /bigobj)
 
 # Add preprocessor definitions for the build version.
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION=\"${FLUTTER_VERSION}\"")
@@ -33,7 +38,7 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 # Add dependency libraries and include directories. Add any application-specific
 # dependencies here.
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
-target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
+target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib" "WindowsApp.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.

@@ -191,7 +191,7 @@ abstract class AppLocalizations {
   /// No description provided for @monthlyImageAllowanceReached.
   ///
   /// In en, this message translates to:
-  /// **'You've reached this month's image allowance. Image uploads temporarily use Free limits (3 per message, 8 per day) until {resetsAt}. Text chat is unaffected.'**
+  /// **'You\'ve reached this month\'s image allowance. Image uploads temporarily use Free limits (3 per message, 8 per day) until {resetsAt}. Text chat is unaffected.'**
   String monthlyImageAllowanceReached(String resetsAt);
 
   /// No description provided for @conversations.
@@ -239,13 +239,13 @@ abstract class AppLocalizations {
   /// No description provided for @storeStubHint.
   ///
   /// In en, this message translates to:
-  /// **'Store purchase stubbed outside an MS Store package — Pro granted via API stub.'**
+  /// **'Dev-only Store stub grant (ALLOW_STORE_STUB_GRANT). Normal builds use in-app Store purchase.'**
   String get storeStubHint;
 
   /// No description provided for @storePurchaseHint.
   ///
   /// In en, this message translates to:
-  /// **'Buy Pro via Microsoft Store. Outside Store packaging this uses a clear stub.'**
+  /// **'Buy Pro in-app via Microsoft Store (Go Pro). Store processes payment inside Orbita.'**
   String get storePurchaseHint;
 
   /// No description provided for @restorePurchases.
