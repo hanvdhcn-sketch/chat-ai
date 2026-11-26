@@ -1,4 +1,4 @@
-﻿# Build a Microsoft Store–ready MSIX for Orbita (unsigned; Store signs on upload).
+# Build a Microsoft Store–ready MSIX for Orbita (unsigned; Store signs on upload).
 # Prerequisites: Flutter Windows desktop, VS Build Tools, Partner Center identity
 # already pasted into pubspec.yaml msix_config (see comments there).
 #
@@ -48,6 +48,13 @@ if ($SkipBuild) {
 dart run msix:create @extra
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Get-ChildItem $outDir -Filter "Orbita*.msix" | ForEach-Object {
+# Partner Center accepts a bare .msix; .msixupload is a zip wrapping it.
+$upload = Join-Path $outDir "Orbita.msixupload"
+Remove-Item $upload -Force -ErrorAction SilentlyContinue
+$zip = Join-Path $outDir "Orbita.zip"
+Compress-Archive -Path (Join-Path $outDir "Orbita.msix") -DestinationPath $zip -CompressionLevel NoCompression -Force
+Rename-Item $zip "Orbita.msixupload"
+
+Get-ChildItem $outDir -Filter "Orbita*.msix*" | ForEach-Object {
   Write-Host "ARTIFACT: $($_.FullName) ($([math]::Round($_.Length/1MB, 2)) MB)"
 }

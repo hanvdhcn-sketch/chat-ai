@@ -116,6 +116,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get restorePurchases => 'Restaurar compras';
+
+  @override
+  String get storeOnlyUpgradeMessage =>
+      'A atualização para o Pro só está disponível na versão instalada pela Microsoft Store.';
+
+  @override
+  String get storePurchaseFailed =>
+      'Não foi possível concluir a compra. Tente novamente mais tarde.';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -230,4 +238,12 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get restorePurchases => 'Restaurar compras';
+
+  @override
+  String get storeOnlyUpgradeMessage =>
+      'A atualização para o Pro só está disponível na versão instalada pela Microsoft Store.';
+
+  @override
+  String get storePurchaseFailed =>
+      'Não foi possível concluir a compra. Tente novamente mais tarde.';
 }

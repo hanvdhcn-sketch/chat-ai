@@ -51,5 +51,7 @@
   "stop": "Dừng",
   "storeStubHint": "Stub cấp Pro chỉ khi bật ALLOW_STORE_STUB_GRANT (dev). Bản thường mua in-app qua Store.",
   "storePurchaseHint": "Mua Pro ngay trong app qua Microsoft Store (Go Pro). Store xử lý thanh toán trong Orbita.",
-  "restorePurchases": "Khôi phục giao dịch"
+  "restorePurchases": "Khôi phục giao dịch",
+  "storeOnlyUpgradeMessage": "Nâng cấp lên Pro chỉ khả dụng trong phiên bản cài đặt từ Microsoft Store.",
+  "storePurchaseFailed": "Không thể hoàn tất giao dịch. Vui lòng thử lại sau."
 }

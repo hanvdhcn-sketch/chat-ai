@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../middleware/auth.js';
 import { config, isMsStoreConfigured } from '../config.js';
 import {
+  issueCollectionsKeyToken,
   listStoreProductsPublic,
   verifyMsStoreEntitlement,
 } from '../services/ms-store-entitlement.js';
@@ -50,6 +51,25 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
         priceUsd: 9.99,
         trialDays: 7,
       };
+    },
+  );
+
+  /**
+   * Token for StoreContext.GetCustomerCollectionsIdAsync (User Store ID key).
+   * 503 when Azure AD credentials are not configured (dev / stub path).
+   */
+  app.post(
+    '/v1/billing/store/collections-token',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const token = await issueCollectionsKeyToken();
+      if (!token) {
+        return reply.code(503).send({
+          error: 'ms_store_not_configured',
+          message: 'Microsoft Store Collections is not configured.',
+        });
+      }
+      return { serviceAccessToken: token, publisherUserId: request.user!.id };
     },
   );
 

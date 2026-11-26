@@ -51,5 +51,7 @@
   "stop": "停止",
   "storeStubHint": "開発専用の Store stub（ALLOW_STORE_STUB_GRANT）。通常ビルドはアプリ内購入を使用します。",
   "storePurchaseHint": "Microsoft Store のアプリ内購入で Pro を購入（Go Pro）。支払いは Orbita 内で処理されます。",
-  "restorePurchases": "購入を復元"
+  "restorePurchases": "購入を復元",
+  "storeOnlyUpgradeMessage": "Pro へのアップグレードは、Microsoft Store からインストールしたバージョンでのみ利用できます。",
+  "storePurchaseFailed": "購入を完了できませんでした。しばらくしてからもう一度お試しください。"
 }

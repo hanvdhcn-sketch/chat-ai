@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:desktop_drop/desktop_drop.dart';
@@ -141,14 +142,20 @@ class _ChatScreenState extends State<ChatScreen> {
       await _refreshTierAfterBilling();
       if (!mounted) return;
       final loc = AppLocalizations.of(context);
-      final msg = result.ok
-          ? (result.stub
-              ? loc.storeStubHint
-              : 'Pro (${result.planTier}) — ${result.status}')
-          : (result.message ?? result.status);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-      if (!result.ok && result.status != 'cancelled') {
-        setState(() => _error = result.message ?? result.status);
+      if (result.ok) {
+        final msg = result.stub
+            ? loc.storeStubHint
+            : 'Pro (${result.planTier}) — ${result.status}';
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(msg)));
+      } else if (result.status != 'cancelled') {
+        developer.log(
+          'Go Pro failed: status=${result.status} message=${result.message}',
+          name: 'chatai.store_billing',
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_storeFailureMessage(loc, result))),
+        );
       }
     } catch (e) {
       setState(() => _error = _friendlyError(e));
@@ -156,6 +163,11 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) setState(() => _billingBusy = false);
     }
   }
+
+  String _storeFailureMessage(AppLocalizations loc, StoreBillingResult result) =>
+      result.storeUnavailable
+          ? loc.storeOnlyUpgradeMessage
+          : loc.storePurchaseFailed;
 
   Future<void> _bootstrap() async {
     StartupClock.mark('chatBootstrapStart');
@@ -287,11 +299,24 @@ class _ChatScreenState extends State<ChatScreen> {
       final result = await _storeBilling.restorePurchases();
       await _refreshTierAfterBilling();
       if (!mounted) return;
+      final loc = AppLocalizations.of(context);
+      final failed = !result.ok &&
+          (result.storeUnavailable ||
+              result.status == 'error' ||
+              result.status == 'product_not_found');
+      if (failed) {
+        developer.log(
+          'Restore failed: status=${result.status} message=${result.message}',
+          name: 'chatai.store_billing',
+        );
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result.message ??
-                (result.ok ? 'Purchases restored' : result.status),
+            failed
+                ? _storeFailureMessage(loc, result)
+                : (result.message ??
+                    (result.ok ? 'Purchases restored' : result.status)),
           ),
         ),
       );

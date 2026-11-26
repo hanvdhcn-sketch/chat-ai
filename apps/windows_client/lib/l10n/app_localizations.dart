@@ -306,6 +306,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restore purchases'**
   String get restorePurchases;
+
+  /// No description provided for @storeOnlyUpgradeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrading to Pro is only available in the version installed from Microsoft Store.'**
+  String get storeOnlyUpgradeMessage;
+
+  /// No description provided for @storePurchaseFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t complete the purchase. Please try again later.'**
+  String get storePurchaseFailed;
 }
 
 class _AppLocalizationsDelegate

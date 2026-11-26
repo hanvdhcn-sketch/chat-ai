@@ -116,4 +116,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get restorePurchases => 'खरीदारी पुनर्स्थापित करें';
+
+  @override
+  String get storeOnlyUpgradeMessage =>
+      'Pro में अपग्रेड केवल Microsoft Store से इंस्टॉल किए गए संस्करण में उपलब्ध है।';
+
+  @override
+  String get storePurchaseFailed =>
+      'खरीदारी पूरी नहीं हो सकी। कृपया बाद में पुनः प्रयास करें।';
 }

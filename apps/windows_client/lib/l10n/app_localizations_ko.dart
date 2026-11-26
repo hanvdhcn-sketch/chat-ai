@@ -113,4 +113,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get restorePurchases => '구매 복원';
+
+  @override
+  String get storeOnlyUpgradeMessage =>
+      'Pro 업그레이드는 Microsoft Store에서 설치한 버전에서만 사용할 수 있습니다.';
+
+  @override
+  String get storePurchaseFailed => '구매를 완료하지 못했습니다. 나중에 다시 시도해 주세요.';
 }

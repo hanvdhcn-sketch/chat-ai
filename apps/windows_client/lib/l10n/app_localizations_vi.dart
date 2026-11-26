@@ -116,4 +116,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get restorePurchases => 'Khôi phục giao dịch';
+
+  @override
+  String get storeOnlyUpgradeMessage =>
+      'Nâng cấp lên Pro chỉ khả dụng trong phiên bản cài đặt từ Microsoft Store.';
+
+  @override
+  String get storePurchaseFailed =>
+      'Không thể hoàn tất giao dịch. Vui lòng thử lại sau.';
 }
