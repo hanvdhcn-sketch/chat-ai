@@ -119,4 +119,58 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get storePurchaseFailed => '无法完成购买，请稍后重试。';
+
+  @override
+  String get authSignInTitle => '登录 Orbita';
+
+  @override
+  String get authEmail => '邮箱';
+
+  @override
+  String get authPassword => '密码';
+
+  @override
+  String get authSignIn => '登录';
+
+  @override
+  String get authCreateAccount => '创建账户';
+
+  @override
+  String get authSwitchToSignUp => '新用户？创建账户';
+
+  @override
+  String get authSwitchToSignIn => '已有账户？登录';
+
+  @override
+  String get authUseEmailCode => '改用邮箱验证码登录';
+
+  @override
+  String get authUsePassword => '改用密码';
+
+  @override
+  String get authSendCode => '发送验证码';
+
+  @override
+  String get authCodeLabel => '邮件中的验证码';
+
+  @override
+  String get authVerifyCode => '验证';
+
+  @override
+  String get authCodeSent => '我们已向你的邮箱发送验证码，请在下方输入。';
+
+  @override
+  String get authConfirmEmail => '请查收邮件并确认邮箱地址，然后登录。';
+
+  @override
+  String get authFailed => '登录失败，请检查信息后重试。';
+
+  @override
+  String get authNotConfigured => '此版本未配置登录功能。';
+
+  @override
+  String get authSignOut => '退出登录';
+
+  @override
+  String get authAccount => '账户';
 }

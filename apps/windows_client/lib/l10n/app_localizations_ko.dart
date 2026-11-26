@@ -120,4 +120,58 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get storePurchaseFailed => '구매를 완료하지 못했습니다. 나중에 다시 시도해 주세요.';
+
+  @override
+  String get authSignInTitle => 'Orbita 로그인';
+
+  @override
+  String get authEmail => '이메일';
+
+  @override
+  String get authPassword => '비밀번호';
+
+  @override
+  String get authSignIn => '로그인';
+
+  @override
+  String get authCreateAccount => '계정 만들기';
+
+  @override
+  String get authSwitchToSignUp => '처음이신가요? 계정 만들기';
+
+  @override
+  String get authSwitchToSignIn => '이미 계정이 있나요? 로그인';
+
+  @override
+  String get authUseEmailCode => '이메일로 로그인 코드 받기';
+
+  @override
+  String get authUsePassword => '비밀번호 사용';
+
+  @override
+  String get authSendCode => '코드 보내기';
+
+  @override
+  String get authCodeLabel => '이메일로 받은 코드';
+
+  @override
+  String get authVerifyCode => '확인';
+
+  @override
+  String get authCodeSent => '이메일로 코드를 보냈습니다. 아래에 입력하세요.';
+
+  @override
+  String get authConfirmEmail => '이메일을 확인해 주소를 인증한 다음 로그인하세요.';
+
+  @override
+  String get authFailed => '로그인에 실패했습니다. 입력한 정보를 확인하고 다시 시도하세요.';
+
+  @override
+  String get authNotConfigured => '이 빌드에는 로그인이 구성되어 있지 않습니다.';
+
+  @override
+  String get authSignOut => '로그아웃';
+
+  @override
+  String get authAccount => '계정';
 }

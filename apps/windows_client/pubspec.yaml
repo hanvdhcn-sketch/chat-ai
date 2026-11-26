@@ -1,7 +1,7 @@
 name: chatai
 description: Orbita — Windows desktop chat client (Microsoft Store / MSIX). Powered by xAI Grok.
 publish_to: "none"
-version: 0.1.2+3
+version: 0.1.3+4
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -54,7 +54,7 @@ msix_config:
   publisher_display_name: Precision Tools Lab
   identity_name: PrecisionToolsLab.OrbitaAI
   publisher: CN=97082A87-14EA-4209-8039-A9443BD7AD27
-  msix_version: 0.1.2.0
+  msix_version: 0.1.3.0
   # true = Store-upload package (unsigned). Sideload/dev: build without --store
   # and/or override via CLI. Default here matches Store target.
   store: true

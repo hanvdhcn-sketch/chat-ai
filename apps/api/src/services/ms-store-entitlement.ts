@@ -3,9 +3,9 @@ import { config, isMsStoreConfigured, type PlanTier } from '../config.js';
 import type { StoreSubscription } from '../types/index.js';
 import {
   getSubscription,
-  setSubscription,
-  setUserPlanTierOverride,
-} from './store.js';
+  saveSubscription,
+  subscriptionGrantsPro,
+} from './subscriptions.js';
 
 export type VerifyStoreBody = {
   storeProductId?: string;
@@ -65,7 +65,7 @@ export async function verifyMsStoreEntitlement(
   if (productId !== config.msStore.proProductId) {
     return {
       planTier: 'free',
-      subscription: getSubscription(userId) ?? null,
+      subscription: (await getSubscription(userId)) ?? null,
       verified: false,
       stub: !configured,
       reason: 'unknown_product',
@@ -75,12 +75,9 @@ export async function verifyMsStoreEntitlement(
   if (configured) {
     const userStoreId = body.userStoreId?.trim();
     if (!userStoreId) {
-      const existing = getSubscription(userId);
+      const existing = await getSubscription(userId);
       return {
-        planTier:
-          existing?.status === 'active' || existing?.status === 'trialing'
-            ? 'pro'
-            : 'free',
+        planTier: subscriptionGrantsPro(existing) ? 'pro' : 'free',
         subscription: existing ?? null,
         verified: false,
         stub: false,
@@ -88,20 +85,32 @@ export async function verifyMsStoreEntitlement(
       };
     }
 
-    const active = await queryCollectionsEntitlement(userStoreId, productId, {
+    const entitlement = await queryCollectionsEntitlement(userStoreId, productId, {
       fetchFn,
     });
+    if (!entitlement) {
+      const existing = await getSubscription(userId);
+      return {
+        planTier: subscriptionGrantsPro(existing) ? 'pro' : 'free',
+        subscription: existing ?? null,
+        verified: false,
+        stub: false,
+        reason: 'collections_unavailable',
+      };
+    }
+    const active = entitlement.active;
 
     const sub: StoreSubscription = {
       userId,
       storeProductId: productId,
       status: active ? 'active' : 'expired',
       userStoreIdHash: hashStoreId(userStoreId),
+      storeCollectionItemId: entitlement.itemId,
+      currentPeriodEnd: entitlement.endDate,
       lastVerifiedAt: nowIso(),
       source: 'collections_api',
     };
-    setSubscription(sub);
-    setUserPlanTierOverride(userId, active ? 'pro' : 'free');
+    await saveSubscription(sub);
     return {
       planTier: active ? 'pro' : 'free',
       subscription: sub,
@@ -115,7 +124,7 @@ export async function verifyMsStoreEntitlement(
   if (nodeEnv === 'production') {
     return {
       planTier: 'free',
-      subscription: getSubscription(userId) ?? null,
+      subscription: (await getSubscription(userId)) ?? null,
       verified: false,
       stub: true,
       reason: 'ms_store_not_configured',
@@ -129,16 +138,15 @@ export async function verifyMsStoreEntitlement(
     body.stubGrantPro === true || body.clientLicenseActive === true;
 
   if (!grant) {
-    const existing = getSubscription(userId);
+    const existing = await getSubscription(userId);
     if (existing && (existing.status === 'active' || existing.status === 'trialing')) {
-      setUserPlanTierOverride(userId, 'free');
       const revoked: StoreSubscription = {
         ...existing,
         status: 'revoked',
         lastVerifiedAt: nowIso(),
         source: 'stub',
       };
-      setSubscription(revoked);
+      await saveSubscription(revoked);
       return {
         planTier: 'free',
         subscription: revoked,
@@ -167,8 +175,7 @@ export async function verifyMsStoreEntitlement(
     source: 'stub',
     trialEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   };
-  setSubscription(sub);
-  setUserPlanTierOverride(userId, 'pro');
+  await saveSubscription(sub);
   return {
     planTier: 'pro',
     subscription: sub,
@@ -178,8 +185,22 @@ export async function verifyMsStoreEntitlement(
   };
 }
 
+function normalizeIso(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const t = Date.parse(value);
+  return Number.isNaN(t) ? undefined : new Date(t).toISOString();
+}
+
+type CollectionsEntitlement = {
+  active: boolean;
+  endDate?: string;
+  itemId?: string;
+};
+
 /**
- * Call Microsoft Store Collections API.
+ * Call Microsoft Store Collections API. Returns null when the lookup itself
+ * failed (token / HTTP error) so callers never downgrade Pro on a transient
+ * outage.
  * Spec sketch (subject to Microsoft docs at implement time):
  *   POST {collectionsBaseUrl}/collections/query
  *   Authorization: Bearer <AAD token>
@@ -192,12 +213,12 @@ async function queryCollectionsEntitlement(
   userStoreId: string,
   storeProductId: string,
   opts: { fetchFn: typeof fetch },
-): Promise<boolean> {
+): Promise<CollectionsEntitlement | null> {
   const token = await fetchAzureAdToken(
     opts.fetchFn,
     config.msStore.collectionsScope,
   );
-  if (!token) return false;
+  if (!token) return null;
   const collectionsProductId =
     config.msStore.proStoreId.trim() || storeProductId;
 
@@ -221,15 +242,20 @@ async function queryCollectionsEntitlement(
   });
 
   if (!res.ok) {
-    return false;
+    return null;
   }
 
   const data = (await res.json()) as {
-    items?: Array<{ productId?: string; status?: string }>;
+    items?: Array<{
+      productId?: string;
+      status?: string;
+      endDate?: string;
+      id?: string;
+    }>;
   };
   const items = data.items ?? [];
   const acceptedIds = new Set([storeProductId, collectionsProductId]);
-  return items.some(
+  const match = items.find(
     (item) =>
       item.productId !== undefined &&
       acceptedIds.has(item.productId) &&
@@ -238,6 +264,11 @@ async function queryCollectionsEntitlement(
         item.status === 'Trial' ||
         item.status === 'trialing'),
   );
+  return {
+    active: Boolean(match),
+    endDate: normalizeIso(match?.endDate),
+    itemId: match?.id,
+  };
 }
 
 /**

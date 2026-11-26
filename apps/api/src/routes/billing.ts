@@ -8,8 +8,8 @@ import {
 } from '../services/ms-store-entitlement.js';
 import {
   getSubscription,
-  getUserPlanTierOverride,
-} from '../services/store.js';
+  resolvePlanTier,
+} from '../services/subscriptions.js';
 
 /**
  * Billing: Microsoft Store IAP / Store-managed subscription.
@@ -79,10 +79,10 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     { preHandler: requireAuth },
     async (request) => {
       const user = request.user!;
-      const override = getUserPlanTierOverride(user.id);
+      const entitled = await resolvePlanTier(user.id);
       return {
-        planTier: override ?? user.planTier,
-        subscription: getSubscription(user.id) ?? null,
+        planTier: entitled === 'pro' ? 'pro' : user.planTier,
+        subscription: (await getSubscription(user.id)) ?? null,
         productId: config.msStore.proProductId,
         provider: 'microsoft_store',
       };

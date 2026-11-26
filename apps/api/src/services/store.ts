@@ -1,22 +1,17 @@
-import type {
-  Conversation,
-  Message,
-  StoreSubscription,
-  UsageSnapshot,
-} from '../types/index.js';
+import type { Conversation, Message, UsageSnapshot } from '../types/index.js';
 import type { PlanTier } from '../config.js';
 import { config } from '../config.js';
 import { isProMonthlyImageSoftCapActive } from './quota-context.js';
+import { resetSubscriptions } from './subscriptions.js';
 
 /**
- * In-memory store for M0/M1. Replace with Postgres (Supabase/Neon) + Redis.
+ * In-memory store for conversations, messages and usage counters (single API
+ * instance). Pro entitlements are NOT here — they persist in Postgres via
+ * subscriptions.ts.
  */
 const conversations = new Map<string, Conversation>();
 const messages = new Map<string, Message[]>();
 const usageByUser = new Map<string, UsageSnapshot>();
-const subscriptionsByUser = new Map<string, StoreSubscription>();
-/** Plan tier overrides from Store entitlement verify (in-memory until Postgres). */
-const planTierByUser = new Map<string, PlanTier>();
 
 function dayStartIso(): string {
   const d = new Date();
@@ -166,29 +161,12 @@ export function incrementUsage(
   return snap;
 }
 
-export function getSubscription(userId: string): StoreSubscription | undefined {
-  return subscriptionsByUser.get(userId);
-}
-
-export function setSubscription(sub: StoreSubscription): void {
-  subscriptionsByUser.set(sub.userId, sub);
-}
-
-export function setUserPlanTierOverride(userId: string, tier: PlanTier): void {
-  planTierByUser.set(userId, tier);
-}
-
-export function getUserPlanTierOverride(userId: string): PlanTier | undefined {
-  return planTierByUser.get(userId);
-}
-
 /** Test helper */
 export function resetStore(): void {
   conversations.clear();
   messages.clear();
   usageByUser.clear();
-  subscriptionsByUser.clear();
-  planTierByUser.clear();
+  resetSubscriptions();
 }
 
 /** Test helper — force usage counters */

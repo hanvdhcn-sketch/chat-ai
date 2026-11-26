@@ -124,4 +124,62 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get storePurchaseFailed =>
       'No pudimos completar la compra. Inténtalo de nuevo más tarde.';
+
+  @override
+  String get authSignInTitle => 'Inicia sesión en Orbita';
+
+  @override
+  String get authEmail => 'Correo electrónico';
+
+  @override
+  String get authPassword => 'Contraseña';
+
+  @override
+  String get authSignIn => 'Iniciar sesión';
+
+  @override
+  String get authCreateAccount => 'Crear cuenta';
+
+  @override
+  String get authSwitchToSignUp => '¿Eres nuevo? Crea una cuenta';
+
+  @override
+  String get authSwitchToSignIn => '¿Ya tienes cuenta? Inicia sesión';
+
+  @override
+  String get authUseEmailCode => 'Enviarme un código de acceso por correo';
+
+  @override
+  String get authUsePassword => 'Usar contraseña';
+
+  @override
+  String get authSendCode => 'Enviar código';
+
+  @override
+  String get authCodeLabel => 'Código de tu correo';
+
+  @override
+  String get authVerifyCode => 'Verificar';
+
+  @override
+  String get authCodeSent =>
+      'Enviamos un código a tu correo. Introdúcelo abajo.';
+
+  @override
+  String get authConfirmEmail =>
+      'Revisa tu correo para confirmar tu dirección y luego inicia sesión.';
+
+  @override
+  String get authFailed =>
+      'No se pudo iniciar sesión. Revisa tus datos e inténtalo de nuevo.';
+
+  @override
+  String get authNotConfigured =>
+      'El inicio de sesión no está configurado en esta compilación.';
+
+  @override
+  String get authSignOut => 'Cerrar sesión';
+
+  @override
+  String get authAccount => 'Cuenta';
 }

@@ -24,7 +24,18 @@ export const config = {
     jwtSecret: process.env.SUPABASE_JWT_SECRET ?? '',
   },
 
+  /**
+   * Dev-only: accept `Bearer stub:<userId>:<tier>` tokens. Requires an explicit
+   * ALLOW_DEV_STUB_AUTH=true and is always off when NODE_ENV=production.
+   */
+  allowDevStubAuth:
+    process.env.ALLOW_DEV_STUB_AUTH === 'true' &&
+    (process.env.NODE_ENV ?? 'development') !== 'production',
+
+  /** Postgres connection string (Supabase → Project Settings → Database). */
   databaseUrl: process.env.DATABASE_URL ?? '',
+  /** `require` (default when DATABASE_URL is set) | `disable` for local Postgres. */
+  databaseSsl: process.env.DATABASE_SSL ?? 'require',
   redisUrl: process.env.REDIS_URL ?? '',
 
   ai: {
@@ -126,8 +137,13 @@ export function isMsStoreConfigured(): boolean {
   );
 }
 
+/** True when the API can verify Supabase JWTs (JWKS needs only the URL; HS256 needs the secret). */
 export function isSupabaseConfigured(): boolean {
-  return Boolean(config.supabase.url && config.supabase.jwtSecret);
+  return Boolean(config.supabase.url);
+}
+
+export function isDatabaseConfigured(): boolean {
+  return Boolean(config.databaseUrl);
 }
 
 /** @deprecated Stripe is not used for end-user Pro. */

@@ -124,4 +124,59 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get storePurchaseFailed =>
       'We couldn\'t complete the purchase. Please try again later.';
+
+  @override
+  String get authSignInTitle => 'Sign in to Orbita';
+
+  @override
+  String get authEmail => 'Email';
+
+  @override
+  String get authPassword => 'Password';
+
+  @override
+  String get authSignIn => 'Sign in';
+
+  @override
+  String get authCreateAccount => 'Create account';
+
+  @override
+  String get authSwitchToSignUp => 'New here? Create an account';
+
+  @override
+  String get authSwitchToSignIn => 'Already have an account? Sign in';
+
+  @override
+  String get authUseEmailCode => 'Email me a sign-in code instead';
+
+  @override
+  String get authUsePassword => 'Use a password instead';
+
+  @override
+  String get authSendCode => 'Send code';
+
+  @override
+  String get authCodeLabel => 'Code from your email';
+
+  @override
+  String get authVerifyCode => 'Verify';
+
+  @override
+  String get authCodeSent => 'We sent a code to your email. Enter it below.';
+
+  @override
+  String get authConfirmEmail =>
+      'Check your email to confirm your address, then sign in.';
+
+  @override
+  String get authFailed => 'Sign-in failed. Check your details and try again.';
+
+  @override
+  String get authNotConfigured => 'Sign-in is not configured in this build.';
+
+  @override
+  String get authSignOut => 'Sign out';
+
+  @override
+  String get authAccount => 'Account';
 }

@@ -1,0 +1,34 @@
+# Fly.io config for the Orbita API. See docs/deploy-fly.md.
+# `app` must be globally unique: change it (or let `fly launch --no-deploy --copy-config` rename it).
+app = "orbita-api"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3001"
+
+[deploy]
+  # Applies apps/api/migrations/*.sql against DATABASE_URL before each release.
+  release_command = "node apps/api/dist/scripts/migrate.js"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  # Conversations/usage counters are in memory: keep exactly one machine.
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "30s"
+    timeout = "5s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

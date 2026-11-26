@@ -124,6 +124,64 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get storePurchaseFailed =>
       'Não foi possível concluir a compra. Tente novamente mais tarde.';
+
+  @override
+  String get authSignInTitle => 'Iniciar sessão no Orbita';
+
+  @override
+  String get authEmail => 'E-mail';
+
+  @override
+  String get authPassword => 'Palavra-passe';
+
+  @override
+  String get authSignIn => 'Iniciar sessão';
+
+  @override
+  String get authCreateAccount => 'Criar conta';
+
+  @override
+  String get authSwitchToSignUp => 'É novo? Crie uma conta';
+
+  @override
+  String get authSwitchToSignIn => 'Já tem conta? Inicie sessão';
+
+  @override
+  String get authUseEmailCode => 'Enviar-me um código de acesso por e-mail';
+
+  @override
+  String get authUsePassword => 'Usar palavra-passe';
+
+  @override
+  String get authSendCode => 'Enviar código';
+
+  @override
+  String get authCodeLabel => 'Código do seu e-mail';
+
+  @override
+  String get authVerifyCode => 'Verificar';
+
+  @override
+  String get authCodeSent =>
+      'Enviámos um código para o seu e-mail. Introduza-o abaixo.';
+
+  @override
+  String get authConfirmEmail =>
+      'Verifique o seu e-mail para confirmar o endereço e depois inicie sessão.';
+
+  @override
+  String get authFailed =>
+      'Falha ao iniciar sessão. Verifique os dados e tente novamente.';
+
+  @override
+  String get authNotConfigured =>
+      'O início de sessão não está configurado nesta versão.';
+
+  @override
+  String get authSignOut => 'Terminar sessão';
+
+  @override
+  String get authAccount => 'Conta';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -246,4 +304,61 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get storePurchaseFailed =>
       'Não foi possível concluir a compra. Tente novamente mais tarde.';
+
+  @override
+  String get authSignInTitle => 'Entrar no Orbita';
+
+  @override
+  String get authEmail => 'E-mail';
+
+  @override
+  String get authPassword => 'Senha';
+
+  @override
+  String get authSignIn => 'Entrar';
+
+  @override
+  String get authCreateAccount => 'Criar conta';
+
+  @override
+  String get authSwitchToSignUp => 'Novo por aqui? Crie uma conta';
+
+  @override
+  String get authSwitchToSignIn => 'Já tem conta? Entre';
+
+  @override
+  String get authUseEmailCode => 'Enviar um código de acesso por e-mail';
+
+  @override
+  String get authUsePassword => 'Usar senha';
+
+  @override
+  String get authSendCode => 'Enviar código';
+
+  @override
+  String get authCodeLabel => 'Código do seu e-mail';
+
+  @override
+  String get authVerifyCode => 'Verificar';
+
+  @override
+  String get authCodeSent =>
+      'Enviamos um código para o seu e-mail. Digite-o abaixo.';
+
+  @override
+  String get authConfirmEmail =>
+      'Confira seu e-mail para confirmar o endereço e depois entre.';
+
+  @override
+  String get authFailed =>
+      'Falha ao entrar. Confira os dados e tente novamente.';
+
+  @override
+  String get authNotConfigured => 'O login não está configurado nesta versão.';
+
+  @override
+  String get authSignOut => 'Sair';
+
+  @override
+  String get authAccount => 'Conta';
 }

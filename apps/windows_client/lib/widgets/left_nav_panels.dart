@@ -491,6 +491,8 @@ class SettingsPanelArgs {
     required this.onUpgrade,
     required this.onRestorePurchases,
     required this.apiBaseUrl,
+    this.accountEmail,
+    this.onSignOut,
   });
 
   final String localeCode;
@@ -502,6 +504,8 @@ class SettingsPanelArgs {
   final VoidCallback onUpgrade;
   final Future<void> Function() onRestorePurchases;
   final String apiBaseUrl;
+  final String? accountEmail;
+  final Future<void> Function()? onSignOut;
 }
 
 Future<void> showSettingsPanel({
@@ -545,6 +549,25 @@ class _SettingsBodyState extends State<_SettingsBody> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       children: [
+        if (args.onSignOut != null) ...[
+          _SettingsSection(
+            title: loc.authAccount,
+            child: _SettingsTile(
+              icon: Icons.account_circle_outlined,
+              title: args.accountEmail ?? loc.authAccount,
+              subtitle: loc.authAccount,
+              trailing: TextButton(
+                onPressed: () async {
+                  await args.onSignOut!();
+                  if (!context.mounted) return;
+                  Navigator.of(context).pop();
+                },
+                child: Text(loc.authSignOut),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
         _SettingsSection(
           title: 'API',
           child: _SettingsTile(

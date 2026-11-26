@@ -120,4 +120,58 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get storePurchaseFailed => '購入を完了できませんでした。しばらくしてからもう一度お試しください。';
+
+  @override
+  String get authSignInTitle => 'Orbita にサインイン';
+
+  @override
+  String get authEmail => 'メールアドレス';
+
+  @override
+  String get authPassword => 'パスワード';
+
+  @override
+  String get authSignIn => 'サインイン';
+
+  @override
+  String get authCreateAccount => 'アカウントを作成';
+
+  @override
+  String get authSwitchToSignUp => '初めての方はアカウントを作成';
+
+  @override
+  String get authSwitchToSignIn => 'アカウントをお持ちの方はサインイン';
+
+  @override
+  String get authUseEmailCode => 'メールでサインインコードを受け取る';
+
+  @override
+  String get authUsePassword => 'パスワードを使う';
+
+  @override
+  String get authSendCode => 'コードを送信';
+
+  @override
+  String get authCodeLabel => 'メールに届いたコード';
+
+  @override
+  String get authVerifyCode => '確認';
+
+  @override
+  String get authCodeSent => 'メールにコードを送信しました。下に入力してください。';
+
+  @override
+  String get authConfirmEmail => 'メールを確認してアドレスを認証し、サインインしてください。';
+
+  @override
+  String get authFailed => 'サインインに失敗しました。入力内容を確認して再試行してください。';
+
+  @override
+  String get authNotConfigured => 'このビルドではサインインが設定されていません。';
+
+  @override
+  String get authSignOut => 'サインアウト';
+
+  @override
+  String get authAccount => 'アカウント';
 }

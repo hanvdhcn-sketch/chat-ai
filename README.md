@@ -26,7 +26,10 @@ npm run dev:api
 # → http://localhost:3001/health
 ```
 
-Dev auth without Supabase: `Authorization: Bearer stub:user_demo:free` (or `:pro`).
+Auth: every `/v1/*` call needs a Supabase access token (JWT verified server-side).
+Dev-only shortcut: set `ALLOW_DEV_STUB_AUTH=true` in `apps/api/.env` (and leave `DATABASE_URL` unset) to accept
+`Authorization: Bearer stub:user_demo:free` (or `:pro`). The stub is ignored, and the API refuses to boot,
+when `NODE_ENV=production`. The curl examples below use the stub token.
 
 ```bash
 # Create conversation
@@ -64,11 +67,12 @@ flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3001
 
 | Variable | Where | Purpose |
 |----------|--------|---------|
-| `SUPABASE_URL` | API + client | Auth project URL |
+| `SUPABASE_URL` | API + client | Auth project URL (API verifies JWTs against it) |
 | `SUPABASE_ANON_KEY` | Client (public) | Supabase anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | API only | Server admin ops |
-| `SUPABASE_JWT_SECRET` | API only | Verify JWTs |
-| `DATABASE_URL` | API | Postgres |
+| `SUPABASE_JWT_SECRET` | API only | Verify HS256 JWTs (legacy secret); asymmetric keys use the JWKS automatically |
+| `DATABASE_URL` | API | Supabase Postgres (session pooler URI) — persists Store entitlements; required in production |
+| `ALLOW_DEV_STUB_AUTH` | API (dev only) | Accept `stub:<id>:<tier>` tokens; forbidden in production |
 | `REDIS_URL` | API | Rate limit / usage cache |
 | `XAI_API_KEY` | API only | Grok inference + native web_search (Responses API) |
 | `XAI_GROK_MODEL` | API | Pro flagship vendor id (default: current strongest stable, e.g. `grok-4.7`). Bump + redeploy when a new flagship ships — no code change. |
@@ -80,8 +84,10 @@ flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3001
 | `MS_STORE_TENANT_ID` | API only | Azure AD tenant for Collections API |
 | `MS_STORE_CLIENT_ID` | API only | Azure AD app client id |
 | `MS_STORE_CLIENT_SECRET` | API only | Azure AD app secret |
+| `MS_STORE_PRO_STORE_ID` | API only | Store ID (9XXXXXXXXXXX) of the `pro_monthly` add-on; required in production |
 | `MS_STORE_PRO_PRODUCT_ID` | API + client dart-define | Partner Center subscription SKU (default `pro_monthly`) |
-| `API_BASE_URL` | Client dart-define | BFF base URL |
+| `API_BASE_URL` | Client dart-define | BFF base URL (Store builds: deployed https URL) |
+| `SUPABASE_ANON_KEY` | Client dart-define | Public anon key |
 
 Full template: [`.env.example`](.env.example). **Do not commit `.env` or real keys.**
 
@@ -107,12 +113,14 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
    - Device family: Windows 10/11 Desktop; request **runFullTrust** in submission notes.
 2. Create **Subscription add-on** with Store ID / product id exactly **`pro_monthly`** at **$9.99/mo**, optional 7-day trial; set `MS_STORE_PRO_PRODUCT_ID` if you ever change the id.
 3. Enroll Azure AD app + Partner Center **service access** for Collections/Purchase API; set `MS_STORE_*` secrets on the API only.
-4. Build Store package (unsigned; Store signs on upload):
+4. Deploy the API first ([docs/deploy-fly.md](docs/deploy-fly.md)), then build the Store package (unsigned; Store signs on upload).
+   The script refuses localhost / http / placeholder values:
 
    ```powershell
    cd apps/windows_client
-   powershell -ExecutionPolicy Bypass -File .\scripts\build_store_msix.ps1 -ApiBaseUrl https://YOUR-API
-   # → dist/msix/Orbita.msix
+   powershell -ExecutionPolicy Bypass -File .\scripts\build_store_msix.ps1 `
+     -ApiBaseUrl https://YOUR-API -SupabaseUrl https://REF.supabase.co -SupabaseAnonKey ANON_KEY
+   # → dist/msix/Orbita.msix (+ Orbita.msixupload)
    ```
 
 5. Upload package in Partner Center; privacy policy URL, age rating, bilingual listing; submit app + add-on.
@@ -135,4 +143,9 @@ Full template: [`.env.example`](.env.example). **Do not commit `.env` or real ke
 
 **M3 (billing):** MS Store products + verify entitlement stubs; Stripe checkout/portal/webhook return **410 Gone**. Live Collections verify when `MS_STORE_*` credentials are set.
 
-Still stubs: Supabase JWT verify, Postgres, Redis. WinRT StoreContext bridge is linked in the Windows runner.
+**Auth + persistence:** Supabase Auth (email + password or email code) in the Windows client; the API verifies Supabase JWTs
+(HS256 secret or JWKS). Store subscriptions live in `public.store_subscriptions` (`apps/api/migrations`, run with
+`npm run migrate -w @chatai/api`), keyed by the Supabase user id and the Store user key hash, so Pro survives API restarts.
+Deploy: [docs/deploy-fly.md](docs/deploy-fly.md).
+
+Still in memory: conversations, messages, usage counters and rate limits (run a single API instance). Redis is unused. Google OAuth is not implemented.

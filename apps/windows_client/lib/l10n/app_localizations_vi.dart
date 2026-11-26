@@ -124,4 +124,61 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get storePurchaseFailed =>
       'Không thể hoàn tất giao dịch. Vui lòng thử lại sau.';
+
+  @override
+  String get authSignInTitle => 'Đăng nhập Orbita';
+
+  @override
+  String get authEmail => 'Email';
+
+  @override
+  String get authPassword => 'Mật khẩu';
+
+  @override
+  String get authSignIn => 'Đăng nhập';
+
+  @override
+  String get authCreateAccount => 'Tạo tài khoản';
+
+  @override
+  String get authSwitchToSignUp => 'Chưa có tài khoản? Tạo tài khoản';
+
+  @override
+  String get authSwitchToSignIn => 'Đã có tài khoản? Đăng nhập';
+
+  @override
+  String get authUseEmailCode => 'Gửi mã đăng nhập qua email';
+
+  @override
+  String get authUsePassword => 'Dùng mật khẩu';
+
+  @override
+  String get authSendCode => 'Gửi mã';
+
+  @override
+  String get authCodeLabel => 'Mã trong email của bạn';
+
+  @override
+  String get authVerifyCode => 'Xác minh';
+
+  @override
+  String get authCodeSent =>
+      'Chúng tôi đã gửi mã đến email của bạn. Nhập mã bên dưới.';
+
+  @override
+  String get authConfirmEmail =>
+      'Kiểm tra email để xác nhận địa chỉ, sau đó đăng nhập.';
+
+  @override
+  String get authFailed =>
+      'Đăng nhập thất bại. Hãy kiểm tra thông tin và thử lại.';
+
+  @override
+  String get authNotConfigured => 'Bản dựng này chưa được cấu hình đăng nhập.';
+
+  @override
+  String get authSignOut => 'Đăng xuất';
+
+  @override
+  String get authAccount => 'Tài khoản';
 }
