@@ -51,5 +51,7 @@
   "stop": "Parar",
   "storeStubHint": "Concessão stub da Store só para desenvolvimento (ALLOW_STORE_STUB_GRANT). Builds normais usam compra no app.",
   "storePurchaseHint": "Compre o Pro no app pela Microsoft Store (Go Pro). A Store processa o pagamento dentro do Orbita.",
-  "restorePurchases": "Restaurar compras"
+  "restorePurchases": "Restaurar compras",
+  "storeOnlyUpgradeMessage": "A atualização para o Pro só está disponível na versão instalada pela Microsoft Store.",
+  "storePurchaseFailed": "Não foi possível concluir a compra. Tente novamente mais tarde."
 }

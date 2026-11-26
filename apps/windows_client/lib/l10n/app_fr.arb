@@ -51,5 +51,7 @@
   "stop": "Arrêter",
   "storeStubHint": "Octroi stub Store réservé au développement (ALLOW_STORE_STUB_GRANT). Les builds normales utilisent l’achat in-app.",
   "storePurchaseHint": "Achetez Pro dans l’app via le Microsoft Store (Go Pro). Le Store traite le paiement dans Orbita.",
-  "restorePurchases": "Restaurer les achats"
+  "restorePurchases": "Restaurer les achats",
+  "storeOnlyUpgradeMessage": "Le passage à Pro n’est disponible que dans la version installée depuis le Microsoft Store.",
+  "storePurchaseFailed": "Impossible de finaliser l’achat. Veuillez réessayer plus tard."
 }

@@ -135,6 +135,26 @@ class ApiClient {
     return StoreVerifyResult.fromJson(body);
   }
 
+  /// Token + user id for `StoreContext.GetCustomerCollectionsIdAsync`.
+  /// Returns null when the API has no Store credentials (dev / stub path).
+  Future<({String serviceAccessToken, String publisherUserId})?>
+      fetchStoreCollectionsToken({
+    Duration timeout = const Duration(seconds: 6),
+  }) async {
+    final res = await _client
+        .post(
+          Uri.parse('${AppConfig.apiBaseUrl}/v1/billing/store/collections-token'),
+          headers: await _headers(),
+        )
+        .timeout(timeout);
+    if (res.statusCode != 200) return null;
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    final token = body['serviceAccessToken'] as String?;
+    final userId = body['publisherUserId'] as String?;
+    if (token == null || token.isEmpty || userId == null) return null;
+    return (serviceAccessToken: token, publisherUserId: userId);
+  }
+
   Future<List<StoreProduct>> listStoreProducts() async {
     final res = await _client.get(
       Uri.parse('${AppConfig.apiBaseUrl}/v1/billing/store/products'),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
@@ -15,7 +16,12 @@ class StoreBillingResult {
     this.message,
     this.stub = false,
     this.bridgeLinked = false,
+    this.storeUnavailable = false,
   });
+
+  /// True when this build has no Microsoft Store package identity (e.g. a
+  /// local/unpackaged build). The UI shows a localized, friendly message.
+  final bool storeUnavailable;
 
   final bool ok;
   final String status;
@@ -69,9 +75,7 @@ class StoreBillingService {
 
   /// Purchase Pro via in-app Store dialog, then verify entitlement with the API.
   Future<StoreBillingResult> purchasePro() async {
-    final native = await _invokeNative('purchase', {
-      'storeProductId': storeProductId,
-    });
+    final native = await _invokeNative('purchase', await _storeArgs());
 
     if (native['status'] == 'cancelled') {
       return StoreBillingResult(
@@ -101,13 +105,13 @@ class StoreBillingService {
     }
 
     if (_isNativeFailure(native)) {
+      _logTechnical('purchase', native);
       return StoreBillingResult(
         ok: false,
         status: native['status'] as String? ?? 'error',
-        message: native['message'] as String? ??
-            'Store purchase failed. Use Go Pro in the app once the MSIX is '
-                'associated with Partner Center (product id: $storeProductId).',
+        message: native['message'] as String?,
         bridgeLinked: native['bridgeLinked'] == true,
+        storeUnavailable: _isStoreUnavailable(native),
       );
     }
 
@@ -129,9 +133,7 @@ class StoreBillingService {
 
   /// Restore / re-check Store licenses and sync plan with the API.
   Future<StoreBillingResult> restorePurchases() async {
-    final native = await _invokeNative('restore', {
-      'storeProductId': storeProductId,
-    });
+    final native = await _invokeNative('restore', await _storeArgs());
 
     if (_shouldUseDevStub(native)) {
       final verified = await _api.verifyStoreEntitlement(
@@ -152,11 +154,13 @@ class StoreBillingService {
     }
 
     if (_isNativeFailure(native) && native['licenseActive'] != true) {
+      _logTechnical('restore', native);
       return StoreBillingResult(
         ok: false,
         status: native['status'] as String? ?? 'error',
-        message: native['message'] as String? ?? 'Store restore failed.',
+        message: native['message'] as String?,
         bridgeLinked: native['bridgeLinked'] == true,
+        storeUnavailable: _isStoreUnavailable(native),
       );
     }
 
@@ -187,8 +191,46 @@ class StoreBillingService {
     final status = native['status'] as String? ?? '';
     return status == 'unavailable' ||
         status == 'store_unavailable' ||
+        status == 'product_not_found' ||
         status == 'error' ||
         native['stub'] == true;
+  }
+
+  bool _isStoreUnavailable(Map<String, dynamic> native) {
+    final status = native['status'] as String? ?? '';
+    return status == 'unavailable' || status == 'store_unavailable';
+  }
+
+  /// Technical Store detail goes to logs only; the UI shows localized copy.
+  void _logTechnical(String op, Map<String, dynamic> native) {
+    developer.log(
+      '$op failed: status=${native['status']} packaged=${native['packaged']} '
+      'bridgeLinked=${native['bridgeLinked']} message=${native['message']}',
+      name: 'chatai.store_billing',
+    );
+  }
+
+  /// Native call arguments. When running with a Store package identity and the
+  /// API has Collections credentials, includes the token the runner exchanges
+  /// for the User Store ID key (needed for server-side entitlement verify).
+  Future<Map<String, dynamic>> _storeArgs() async {
+    final args = <String, dynamic>{'storeProductId': storeProductId};
+    if (!isWindowsDesktop) return args;
+    try {
+      final ping = await _invokeNative('ping', const {});
+      if (ping['packaged'] != true) return args;
+      final key = await _api.fetchStoreCollectionsToken();
+      if (key != null) {
+        args['serviceAccessToken'] = key.serviceAccessToken;
+        args['publisherUserId'] = key.publisherUserId;
+      }
+    } catch (e) {
+      developer.log(
+        'collections token unavailable: $e',
+        name: 'chatai.store_billing',
+      );
+    }
+    return args;
   }
 
   Future<Map<String, dynamic>> _invokeNative(

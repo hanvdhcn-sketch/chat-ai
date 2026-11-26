@@ -51,5 +51,7 @@
   "stop": "停止",
   "storeStubHint": "仅开发环境可用的商店 stub 授权（ALLOW_STORE_STUB_GRANT）。正式版通过应用内购买。",
   "storePurchaseHint": "通过 Microsoft Store 应用内购买 Pro（开通 Pro）。支付在 Orbita 内由商店处理。",
-  "restorePurchases": "恢复购买"
+  "restorePurchases": "恢复购买",
+  "storeOnlyUpgradeMessage": "升级到 Pro 仅适用于从 Microsoft Store 安装的版本。",
+  "storePurchaseFailed": "无法完成购买，请稍后重试。"
 }

@@ -57,6 +57,8 @@ export const config = {
     clientId: process.env.MS_STORE_CLIENT_ID ?? '',
     clientSecret: process.env.MS_STORE_CLIENT_SECRET ?? '',
     proProductId: process.env.MS_STORE_PRO_PRODUCT_ID ?? 'pro_monthly',
+    /** Partner Center Store ID (9XXXXXXXXXXX) of the pro_monthly add-on; Collections returns this id. */
+    proStoreId: process.env.MS_STORE_PRO_STORE_ID ?? '',
     collectionsBaseUrl:
       process.env.MS_STORE_COLLECTIONS_BASE_URL ??
       'https://collections.mp.microsoft.com/v7.0',
@@ -64,6 +66,10 @@ export const config = {
     collectionsScope:
       process.env.MS_STORE_COLLECTIONS_SCOPE ??
       'https://onestore.microsoft.com/.default',
+    /** Audience of the key the client exchanges via StoreContext.GetCustomerCollectionsIdAsync. */
+    collectionsKeyScope:
+      process.env.MS_STORE_COLLECTIONS_KEY_SCOPE ??
+      'https://onestore.microsoft.com/b2b/keys/create/collections/.default',
   },
 
   /**

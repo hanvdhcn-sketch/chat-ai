@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeEach } from 'node:test';
 import {
+  issueCollectionsKeyToken,
   listStoreProductsPublic,
   verifyMsStoreEntitlement,
 } from './ms-store-entitlement.js';
@@ -87,6 +88,20 @@ describe('ms-store-entitlement', () => {
     assert.equal(result.verified, true);
     assert.ok(calls.some((u) => u.includes('login.microsoftonline.com')));
     assert.ok(calls.some((u) => u.includes('collections')));
+  });
+
+  it('issues a Collections key token only when configured', async () => {
+    let scope = '';
+    const fetchFn = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      scope = new URLSearchParams(String(init?.body)).get('scope') ?? '';
+      return new Response(JSON.stringify({ access_token: 'key-tok' }), {
+        status: 200,
+      });
+    }) as typeof fetch;
+
+    assert.equal(await issueCollectionsKeyToken(fetchFn, false), null);
+    assert.equal(await issueCollectionsKeyToken(fetchFn, true), 'key-tok');
+    assert.ok(scope.includes('b2b/keys/create/collections'));
   });
 
   it('requires userStoreId when Collections is configured', async () => {

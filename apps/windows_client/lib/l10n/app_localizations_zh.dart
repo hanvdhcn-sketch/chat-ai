@@ -113,4 +113,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get restorePurchases => '恢复购买';
+
+  @override
+  String get storeOnlyUpgradeMessage => '升级到 Pro 仅适用于从 Microsoft Store 安装的版本。';
+
+  @override
+  String get storePurchaseFailed => '无法完成购买，请稍后重试。';
 }

@@ -116,4 +116,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get restorePurchases => 'Restore purchases';
+
+  @override
+  String get storeOnlyUpgradeMessage =>
+      'Upgrading to Pro is only available in the version installed from Microsoft Store.';
+
+  @override
+  String get storePurchaseFailed =>
+      'We couldn\'t complete the purchase. Please try again later.';
 }

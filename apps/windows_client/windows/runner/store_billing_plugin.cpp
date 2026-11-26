@@ -64,6 +64,11 @@ std::wstring Utf8ToWide(std::string_view value) {
   return out;
 }
 
+void LogStoreDebug(std::string const& line) {
+  std::string out = "[chatai/store_billing] " + line + "\n";
+  OutputDebugStringA(out.c_str());
+}
+
 EncodableMap BaseResponse() {
   EncodableMap map;
   map[EncodableValue("bridgeLinked")] = EncodableValue(true);
@@ -94,7 +99,9 @@ bool LicenseMatchesProduct(StoreLicense const& license,
   }
   auto sku = std::wstring(license.SkuStoreId().c_str());
   auto key_w = std::wstring(key.c_str());
-  if (_wcsicmp(sku.c_str(), product_id.c_str()) == 0 ||
+  auto offer = std::wstring(license.InAppOfferToken().c_str());
+  if (_wcsicmp(offer.c_str(), product_id.c_str()) == 0 ||
+      _wcsicmp(sku.c_str(), product_id.c_str()) == 0 ||
       _wcsicmp(key_w.c_str(), product_id.c_str()) == 0) {
     return true;
   }
@@ -130,6 +137,11 @@ winrt::Windows::Foundation::IAsyncOperation<StoreProduct> FindStoreProductAsync(
   auto kinds = winrt::single_threaded_vector<winrt::hstring>(
       {L"Durable", L"Subscription"});
   auto query = co_await context.GetAssociatedStoreProductsAsync(kinds.GetView());
+  if (query.ExtendedError().value != S_OK) {
+    LogStoreDebug("GetAssociatedStoreProductsAsync failed: hr=0x" +
+                  std::to_string(static_cast<unsigned int>(
+                      query.ExtendedError().value)));
+  }
   for (auto const& pair : query.Products()) {
     StoreProduct product = pair.Value();
     auto offer = std::wstring(product.InAppOfferToken().c_str());
@@ -166,13 +178,37 @@ std::string ReadOptionalString(EncodableMap const* args, char const* key) {
   return std::get<std::string>(it->second);
 }
 
+// Best-effort: exchange the API-issued AAD token for the User Store ID key the
+// backend needs to query the Collections API. Never fails the purchase/restore.
+winrt::Windows::Foundation::IAsyncOperation<winrt::hstring>
+TryGetCollectionsIdAsync(StoreContext context,
+                         std::string service_access_token,
+                         std::string publisher_user_id) {
+  if (service_access_token.empty()) {
+    co_return winrt::hstring{};
+  }
+  try {
+    co_return co_await context.GetCustomerCollectionsIdAsync(
+        winrt::to_hstring(service_access_token),
+        winrt::to_hstring(publisher_user_id));
+  } catch (winrt::hresult_error const& ex) {
+    LogStoreDebug("GetCustomerCollectionsIdAsync failed: " +
+                  WideToUtf8(ex.message().c_str()));
+  } catch (...) {
+  }
+  co_return winrt::hstring{};
+}
+
 winrt::fire_and_forget HandlePurchaseAsync(
     HWND hwnd,
     std::wstring product_id,
+    std::string service_access_token,
+    std::string publisher_user_id,
     std::unique_ptr<flutter::MethodResult<EncodableValue>> result) {
   auto reply = BaseResponse();
   try {
     if (!IsRunningPackaged()) {
+      LogStoreDebug("purchase: not packaged (no package identity).");
       reply[EncodableValue("status")] = EncodableValue("store_unavailable");
       reply[EncodableValue("licenseActive")] = EncodableValue(false);
       reply[EncodableValue("message")] = EncodableValue(
@@ -184,23 +220,42 @@ winrt::fire_and_forget HandlePurchaseAsync(
 
     StoreContext context = GetStoreContext(hwnd);
     StoreProduct product = co_await FindStoreProductAsync(context, product_id);
+    if (!product) {
+      LogStoreDebug("purchase: add-on not found for product id " +
+                    WideToUtf8(product_id));
+      reply[EncodableValue("status")] = EncodableValue("product_not_found");
+      reply[EncodableValue("licenseActive")] = EncodableValue(false);
+      reply[EncodableValue("message")] = EncodableValue(
+          "Store add-on '" + WideToUtf8(product_id) +
+          "' was not found for this app (is it published in Partner Center "
+          "and is the package Store-associated?).");
+      ReplyMap(std::move(result), std::move(reply));
+      co_return;
+    }
 
-    StorePurchaseResult purchase =
-        product
-            ? co_await product.RequestPurchaseAsync()
-            : co_await context.RequestPurchaseAsync(winrt::hstring(product_id));
+    StorePurchaseResult purchase = co_await product.RequestPurchaseAsync();
 
     switch (purchase.Status()) {
       case StorePurchaseStatus::Succeeded:
       case StorePurchaseStatus::AlreadyPurchased: {
+        // The purchase result is authoritative; the cached app license can lag
+        // briefly, so the license query is informational only.
         bool active = co_await QueryLicenseActiveAsync(context, product_id);
+        LogStoreDebug(std::string("purchase succeeded; license cache active=") +
+                      (active ? "true" : "false"));
         reply[EncodableValue("status")] = EncodableValue(
             purchase.Status() == StorePurchaseStatus::AlreadyPurchased
                 ? "already_purchased"
                 : "purchased");
-        reply[EncodableValue("licenseActive")] = EncodableValue(active || true);
+        reply[EncodableValue("licenseActive")] = EncodableValue(true);
         reply[EncodableValue("message")] =
             EncodableValue("Store purchase completed.");
+        auto collections_id = co_await TryGetCollectionsIdAsync(
+            context, service_access_token, publisher_user_id);
+        if (!collections_id.empty()) {
+          reply[EncodableValue("userStoreId")] =
+              EncodableValue(WideToUtf8(collections_id.c_str()));
+        }
         break;
       }
       case StorePurchaseStatus::NotPurchased:
@@ -276,18 +331,11 @@ winrt::fire_and_forget HandleRestoreAsync(
                : "No active Pro Store license for this account.");
 
     // Optional Collections identity when the API supplied a service access token.
-    if (!service_access_token.empty()) {
-      try {
-        auto collections_id = co_await context.GetCustomerCollectionsIdAsync(
-            winrt::to_hstring(service_access_token),
-            winrt::to_hstring(publisher_user_id));
-        if (!collections_id.empty()) {
-          reply[EncodableValue("userStoreId")] =
-              EncodableValue(WideToUtf8(collections_id.c_str()));
-        }
-      } catch (...) {
-        // License restore still succeeds without Collections id.
-      }
+    auto collections_id = co_await TryGetCollectionsIdAsync(
+        context, service_access_token, publisher_user_id);
+    if (!collections_id.empty()) {
+      reply[EncodableValue("userStoreId")] =
+          EncodableValue(WideToUtf8(collections_id.c_str()));
     }
   } catch (winrt::hresult_error const& ex) {
     reply[EncodableValue("status")] = EncodableValue("error");
@@ -323,7 +371,10 @@ class StoreBillingHandler {
     }
 
     if (call.method_name() == "purchase") {
-      HandlePurchaseAsync(hwnd_, ReadProductId(args), std::move(result));
+      HandlePurchaseAsync(hwnd_, ReadProductId(args),
+                          ReadOptionalString(args, "serviceAccessToken"),
+                          ReadOptionalString(args, "publisherUserId"),
+                          std::move(result));
       return;
     }
 

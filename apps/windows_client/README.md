@@ -45,6 +45,13 @@ flutter run -d windows \
 - Dev-only API stub grant: `--dart-define=ALLOW_STORE_STUB_GRANT=true` (Release never stubs silently).
 - Restore re-reads Store add-on licenses and re-verifies with `POST /v1/billing/store/verify`.
 - Manage / cancel: Microsoft Store account UI; app re-verifies on restore / next launch.
+- Unpackaged builds (no package identity) show a localized friendly message
+  ("Upgrading to Pro is only available in the version installed from Microsoft Store.");
+  technical detail goes to `developer.log` (`chatai.store_billing`) and `OutputDebugString` only.
+- Server-side activation: when the API has Azure AD credentials, the client fetches
+  `POST /v1/billing/store/collections-token`, the runner exchanges it via
+  `GetCustomerCollectionsIdAsync` for the User Store ID key, and `POST /v1/billing/store/verify`
+  checks Collections (set `MS_STORE_PRO_STORE_ID` to the add-on's 9XXXXXXXXXXX Store ID).
 
 ## Free badge / i18n
 

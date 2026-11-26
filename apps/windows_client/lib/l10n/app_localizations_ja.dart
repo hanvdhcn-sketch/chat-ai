@@ -113,4 +113,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get restorePurchases => '購入を復元';
+
+  @override
+  String get storeOnlyUpgradeMessage =>
+      'Pro へのアップグレードは、Microsoft Store からインストールしたバージョンでのみ利用できます。';
+
+  @override
+  String get storePurchaseFailed => '購入を完了できませんでした。しばらくしてからもう一度お試しください。';
 }

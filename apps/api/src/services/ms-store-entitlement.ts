@@ -193,8 +193,13 @@ async function queryCollectionsEntitlement(
   storeProductId: string,
   opts: { fetchFn: typeof fetch },
 ): Promise<boolean> {
-  const token = await fetchAzureAdToken(opts.fetchFn);
+  const token = await fetchAzureAdToken(
+    opts.fetchFn,
+    config.msStore.collectionsScope,
+  );
   if (!token) return false;
+  const collectionsProductId =
+    config.msStore.proStoreId.trim() || storeProductId;
 
   const url = `${config.msStore.collectionsBaseUrl.replace(/\/$/, '')}/collections/query`;
   const res = await opts.fetchFn(url, {
@@ -211,7 +216,7 @@ async function queryCollectionsEntitlement(
           localTicketReference: 'chatai',
         },
       ],
-      productSkuIds: [{ productId: storeProductId }],
+      productSkuIds: [{ productId: collectionsProductId }],
     }),
   });
 
@@ -223,9 +228,11 @@ async function queryCollectionsEntitlement(
     items?: Array<{ productId?: string; status?: string }>;
   };
   const items = data.items ?? [];
+  const acceptedIds = new Set([storeProductId, collectionsProductId]);
   return items.some(
     (item) =>
-      item.productId === storeProductId &&
+      item.productId !== undefined &&
+      acceptedIds.has(item.productId) &&
       (item.status === 'Active' ||
         item.status === 'active' ||
         item.status === 'Trial' ||
@@ -233,14 +240,30 @@ async function queryCollectionsEntitlement(
   );
 }
 
-async function fetchAzureAdToken(fetchFn: typeof fetch): Promise<string | null> {
-  const { tenantId, clientId, clientSecret, collectionsScope } = config.msStore;
+/**
+ * Short-lived AAD token the Windows client passes to
+ * StoreContext.GetCustomerCollectionsIdAsync so it can return the User Store ID
+ * key that `verifyMsStoreEntitlement` needs. Returns null when not configured.
+ */
+export async function issueCollectionsKeyToken(
+  fetchFn: typeof fetch = fetch,
+  configured: boolean = isMsStoreConfigured(),
+): Promise<string | null> {
+  if (!configured) return null;
+  return fetchAzureAdToken(fetchFn, config.msStore.collectionsKeyScope);
+}
+
+async function fetchAzureAdToken(
+  fetchFn: typeof fetch,
+  scope: string,
+): Promise<string | null> {
+  const { tenantId, clientId, clientSecret } = config.msStore;
   const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
     client_id: clientId,
     client_secret: clientSecret,
-    scope: collectionsScope,
+    scope,
   });
 
   const res = await fetchFn(tokenUrl, {

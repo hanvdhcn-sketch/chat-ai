@@ -51,5 +51,7 @@
   "stop": "रोकें",
   "storeStubHint": "केवल डेव Store stub अनुदान (ALLOW_STORE_STUB_GRANT)। सामान्य बिल्ड इन-ऐप खरीद उपयोग करते हैं।",
   "storePurchaseHint": "Microsoft Store के ज़रिए ऐप में Pro खरीदें (Go Pro)। Store भुगतान Orbita में प्रोसेस करता है।",
-  "restorePurchases": "खरीदारी पुनर्स्थापित करें"
+  "restorePurchases": "खरीदारी पुनर्स्थापित करें",
+  "storeOnlyUpgradeMessage": "Pro में अपग्रेड केवल Microsoft Store से इंस्टॉल किए गए संस्करण में उपलब्ध है।",
+  "storePurchaseFailed": "खरीदारी पूरी नहीं हो सकी। कृपया बाद में पुनः प्रयास करें।"
 }
