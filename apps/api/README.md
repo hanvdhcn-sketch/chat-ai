@@ -15,7 +15,8 @@ npm run dev:api
 
 | Method | Path | Auth | Notes |
 |--------|------|------|-------|
-| GET | `/health` | no | Config readiness flags (`msStoreConfigured`) |
+| GET | `/health` | no | Liveness + config flags (`env`, `databaseConfigured`, `devStubAuth`, `msStoreConfigured`) |
+| GET | `/health/ready` | no | Readiness: pings Postgres (503 when `DATABASE_URL` is set but unreachable) |
 | GET | `/v1/me` | Bearer | Profile + `planTier` (Store override applied) |
 | GET/POST | `/v1/conversations` | Bearer | List / create |
 | GET | `/v1/conversations/:id` | Bearer | Conversation + messages |
@@ -29,7 +30,9 @@ npm run dev:api
 | POST | `/v1/billing/portal` | Bearer | **410** deprecated (was Stripe) |
 | POST | `/v1/billing/webhook` | — | **410** deprecated (was Stripe) |
 
-Dev token: `Bearer stub:user_demo:free` or `stub:user_demo:pro`.
+Auth: `Authorization: Bearer <Supabase access token>`, verified with `SUPABASE_JWT_SECRET` (HS256) or the project JWKS
+(ES256/RS256) plus issuer `${SUPABASE_URL}/auth/v1` and audience `authenticated`.
+Dev only: with `ALLOW_DEV_STUB_AUTH=true` (ignored/forbidden when `NODE_ENV=production`), `Bearer stub:user_demo:free` or `stub:user_demo:pro` is accepted.
 
 ### Store verify body
 
@@ -66,4 +69,10 @@ npm run test -w @chatai/api   # mock-HTTP gateway + web search + quota + Store e
 
 ## Storage
 
-In-memory maps (usage + conversations + Store subscriptions). Redis/Postgres still optional for local.
+- **Postgres (Supabase):** Store subscriptions/entitlements (`public.store_subscriptions`, one row per Supabase user id, with the Store user key hash). Set `DATABASE_URL`; apply migrations with `npm run migrate -w @chatai/api` (the Fly release command does this on deploy). Without `DATABASE_URL` (local dev) they stay in memory.
+- **In memory:** conversations, messages, usage counters, rate limits. Run a single instance.
+- A Collections outage keeps the persisted tier; Pro ends at `currentPeriodEnd` (+ grace) when Collections no longer reports the add-on.
+
+## Deploy
+
+`Dockerfile` + `fly.toml` at the repo root; guide: [docs/deploy-fly.md](../../docs/deploy-fly.md). With `NODE_ENV=production` the API refuses to boot unless `SUPABASE_URL`, `DATABASE_URL`, `XAI_API_KEY`, `MS_STORE_TENANT_ID`, `MS_STORE_CLIENT_ID`, `MS_STORE_CLIENT_SECRET` and `MS_STORE_PRO_STORE_ID` are set and `ALLOW_DEV_STUB_AUTH` is not.

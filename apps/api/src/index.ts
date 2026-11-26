@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { config } from './config.js';
+import { productionConfigProblems } from './config-check.js';
 import { healthRoutes } from './routes/health.js';
 import { authRoutes } from './routes/auth.js';
 import { conversationRoutes } from './routes/conversations.js';
@@ -9,6 +10,13 @@ import { usageRoutes } from './routes/usage.js';
 import { billingRoutes } from './routes/billing.js';
 
 async function main() {
+  const problems = productionConfigProblems();
+  if (problems.length > 0) {
+    throw new Error(
+      `Refusing to start in production:\n - ${problems.join('\n - ')}`,
+    );
+  }
+
   const app = Fastify({
     logger: true,
   });

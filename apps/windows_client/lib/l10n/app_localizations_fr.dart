@@ -124,4 +124,62 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get storePurchaseFailed =>
       'Impossible de finaliser l’achat. Veuillez réessayer plus tard.';
+
+  @override
+  String get authSignInTitle => 'Connectez-vous à Orbita';
+
+  @override
+  String get authEmail => 'E-mail';
+
+  @override
+  String get authPassword => 'Mot de passe';
+
+  @override
+  String get authSignIn => 'Se connecter';
+
+  @override
+  String get authCreateAccount => 'Créer un compte';
+
+  @override
+  String get authSwitchToSignUp => 'Nouveau ? Créez un compte';
+
+  @override
+  String get authSwitchToSignIn => 'Déjà un compte ? Connectez-vous';
+
+  @override
+  String get authUseEmailCode => 'Recevoir un code de connexion par e-mail';
+
+  @override
+  String get authUsePassword => 'Utiliser un mot de passe';
+
+  @override
+  String get authSendCode => 'Envoyer le code';
+
+  @override
+  String get authCodeLabel => 'Code reçu par e-mail';
+
+  @override
+  String get authVerifyCode => 'Vérifier';
+
+  @override
+  String get authCodeSent =>
+      'Nous avons envoyé un code à votre e-mail. Saisissez-le ci-dessous.';
+
+  @override
+  String get authConfirmEmail =>
+      'Vérifiez votre e-mail pour confirmer votre adresse, puis connectez-vous.';
+
+  @override
+  String get authFailed =>
+      'Échec de la connexion. Vérifiez vos informations et réessayez.';
+
+  @override
+  String get authNotConfigured =>
+      'La connexion n\'est pas configurée dans cette version.';
+
+  @override
+  String get authSignOut => 'Se déconnecter';
+
+  @override
+  String get authAccount => 'Compte';
 }

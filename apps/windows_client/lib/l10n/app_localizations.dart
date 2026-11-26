@@ -318,6 +318,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t complete the purchase. Please try again later.'**
   String get storePurchaseFailed;
+
+  /// No description provided for @authSignInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Orbita'**
+  String get authSignInTitle;
+
+  /// No description provided for @authEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get authEmail;
+
+  /// No description provided for @authPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get authPassword;
+
+  /// No description provided for @authSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get authSignIn;
+
+  /// No description provided for @authCreateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get authCreateAccount;
+
+  /// No description provided for @authSwitchToSignUp.
+  ///
+  /// In en, this message translates to:
+  /// **'New here? Create an account'**
+  String get authSwitchToSignUp;
+
+  /// No description provided for @authSwitchToSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? Sign in'**
+  String get authSwitchToSignIn;
+
+  /// No description provided for @authUseEmailCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Email me a sign-in code instead'**
+  String get authUseEmailCode;
+
+  /// No description provided for @authUsePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a password instead'**
+  String get authUsePassword;
+
+  /// No description provided for @authSendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get authSendCode;
+
+  /// No description provided for @authCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Code from your email'**
+  String get authCodeLabel;
+
+  /// No description provided for @authVerifyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get authVerifyCode;
+
+  /// No description provided for @authCodeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a code to your email. Enter it below.'**
+  String get authCodeSent;
+
+  /// No description provided for @authConfirmEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your email to confirm your address, then sign in.'**
+  String get authConfirmEmail;
+
+  /// No description provided for @authFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed. Check your details and try again.'**
+  String get authFailed;
+
+  /// No description provided for @authNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in is not configured in this build.'**
+  String get authNotConfigured;
+
+  /// No description provided for @authSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get authSignOut;
+
+  /// No description provided for @authAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get authAccount;
 }
 
 class _AppLocalizationsDelegate

@@ -20,16 +20,22 @@ flutter create --platforms=windows .
 flutter pub get
 flutter run -d windows \
   --dart-define=API_BASE_URL=http://localhost:3001 \
-  --dart-define=STUB_AUTH_TOKEN=stub:user_demo:free \
+  --dart-define=SUPABASE_URL=https://REF.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=ANON_KEY \
   --dart-define=MS_STORE_PRO_PRODUCT_ID=pro_monthly
 ```
 
-## Auth (Supabase hooks)
+Offline/dev without Supabase: run the API with `ALLOW_DEV_STUB_AUTH=true` and the app with
+`--dart-define=ALLOW_DEV_STUB_AUTH=true` (optionally `STUB_AUTH_TOKEN=stub:user_demo:pro`). Release builds ignore this flag.
 
-- Secure storage holds JWT / stub token.
-- `AuthService` calls `GET /v1/me`.
-- Wire magic link + Google via Supabase Auth + deep link `chatai://auth/callback`.
-- Public only: `SUPABASE_URL`, `SUPABASE_ANON_KEY` via `--dart-define`.
+## Auth (Supabase)
+
+- `AuthService` signs in against Supabase Auth REST (email + password, create account, or email one-time code), keeps the
+  access + refresh token in SharedPreferences (swap to secure storage once ATL is installed), refreshes shortly before expiry
+  and on a 401, and signs out locally even when offline.
+- `AuthGate` (`lib/main.dart`) shows `SignInScreen` until there is a session; the API receives the Supabase JWT as the Bearer token.
+- The `stub:` token and the Stub Free/Pro menu exist only with `--dart-define=ALLOW_DEV_STUB_AUTH=true` in a non-release build.
+- Public only: `SUPABASE_URL`, `SUPABASE_ANON_KEY` via `--dart-define`. Google OAuth is not implemented.
 
 ## Streaming
 
@@ -78,6 +84,13 @@ dart run msix:create --store `
   --output-path=..\..\dist\msix --output-name=Orbita
 ```
 
-3. For production API host: `-ApiBaseUrl https://your-api.example.com` (or pass `--dart-define=API_BASE_URL=…`).
+3. The script **requires** `-ApiBaseUrl`, `-SupabaseUrl` and `-SupabaseAnonKey` and exits with `BUILD REFUSED` for localhost / private hosts,
+   plain http, placeholders or a service_role key; after building it checks that the Release `app.so` embeds both URLs.
+   `-AllowLocalApi` is for non-Store smoke packs only:
+
+```powershell
+.\scripts\build_store_msix.ps1 -ApiBaseUrl https://your-api.example.com `
+  -SupabaseUrl https://REF.supabase.co -SupabaseAnonKey ANON_KEY
+```
 Upload the `.msix` in Partner Center Packages; Store signs it. Do **not** expect local sideload of a `--store` package without Partner Center association.
 See root README for Azure AD Collections notes.

@@ -5,10 +5,16 @@ import {
   listStoreProductsPublic,
   verifyMsStoreEntitlement,
 } from './ms-store-entitlement.js';
-import { resetStore, getUserPlanTierOverride } from './store.js';
+import { resetStore } from './store.js';
+import {
+  MemorySubscriptionRepo,
+  resolvePlanTier,
+  setSubscriptionRepo,
+} from './subscriptions.js';
 
 describe('ms-store-entitlement', () => {
   beforeEach(() => {
+    setSubscriptionRepo(new MemorySubscriptionRepo());
     resetStore();
   });
 
@@ -29,7 +35,7 @@ describe('ms-store-entitlement', () => {
     assert.equal(result.planTier, 'pro');
     assert.equal(result.stub, true);
     assert.equal(result.verified, true);
-    assert.equal(getUserPlanTierOverride('user_a'), 'pro');
+    assert.equal(await resolvePlanTier('user_a'), 'pro');
   });
 
   it('rejects unknown store product id', async () => {
@@ -123,5 +129,52 @@ describe('ms-store-entitlement', () => {
     assert.equal(result.planTier, 'pro');
     assert.equal(result.stub, true);
     assert.equal(result.reason, 'stub_granted');
+  });
+
+  it('keeps persisted Pro when Collections is unreachable', async () => {
+    await verifyMsStoreEntitlement(
+      'user_g',
+      { storeProductId: 'pro_monthly', clientLicenseActive: true },
+      { configured: false, nodeEnv: 'development' },
+    );
+    const failing = (async () =>
+      new Response('boom', { status: 500 })) as typeof fetch;
+    const result = await verifyMsStoreEntitlement(
+      'user_g',
+      { storeProductId: 'pro_monthly', userStoreId: 'key' },
+      { configured: true, fetchFn: failing, nodeEnv: 'production' },
+    );
+    assert.equal(result.verified, false);
+    assert.equal(result.reason, 'collections_unavailable');
+    assert.equal(result.planTier, 'pro');
+    assert.equal(await resolvePlanTier('user_g'), 'pro');
+  });
+
+  it('stores Collections end date and expires Pro after it passes', async () => {
+    const fetchFn = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('login.microsoftonline.com')) {
+        return new Response(JSON.stringify({ access_token: 't' }), { status: 200 });
+      }
+      return new Response(
+        JSON.stringify({
+          items: [
+            {
+              productId: 'pro_monthly',
+              status: 'Active',
+              endDate: '2000-01-01T00:00:00Z',
+            },
+          ],
+        }),
+        { status: 200 },
+      );
+    }) as typeof fetch;
+    const result = await verifyMsStoreEntitlement(
+      'user_h',
+      { storeProductId: 'pro_monthly', userStoreId: 'key' },
+      { configured: true, fetchFn, nodeEnv: 'production' },
+    );
+    assert.equal(result.subscription?.currentPeriodEnd, '2000-01-01T00:00:00.000Z');
+    assert.equal(await resolvePlanTier('user_h'), 'free');
   });
 });

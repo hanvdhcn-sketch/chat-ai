@@ -108,7 +108,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     final auth = context.read<AuthService>();
-    _api = ApiClient(getToken: () async => auth.accessToken);
+    _api = ApiClient(getToken: auth.freshAccessToken);
     _storeBilling = StoreBillingService(api: _api);
     // Optimistic shell: composer + sample chat before any network round-trip.
     final demos = _demoConversations();
@@ -372,6 +372,8 @@ class _ChatScreenState extends State<ChatScreen> {
             onUpgrade: _upgradePro,
             onRestorePurchases: _restorePurchasesAction,
             apiBaseUrl: AppConfig.apiBaseUrl,
+            accountEmail: auth.email,
+            onSignOut: auth.isDevStub ? null : auth.signOut,
           ),
         );
         return;
@@ -1128,10 +1130,12 @@ class _ChatScreenState extends State<ChatScreen> {
                   onRestore: () {
                     _restorePurchasesAction();
                   },
-                  onSwitchTier: (tier) async {
-                    await auth.switchStubTier(tier);
-                    await _bootstrap();
-                  },
+                  onSwitchTier: auth.isDevStub
+                      ? (tier) async {
+                          await auth.switchStubTier(tier);
+                          await _bootstrap();
+                        }
+                      : null,
                 ),
                 if (_error != null)
                   Material(
@@ -1271,7 +1275,7 @@ class _ChatHeader extends StatelessWidget {
   final VoidCallback onCycleLocale;
   final String localeCode;
   final VoidCallback onRestore;
-  final ValueChanged<String> onSwitchTier;
+  final ValueChanged<String>? onSwitchTier;
 
   @override
   Widget build(BuildContext context) {
@@ -1336,7 +1340,7 @@ class _ChatHeader extends StatelessWidget {
             onSelected: (v) {
               if (v == 'locale') onCycleLocale();
               if (v == 'restore') onRestore();
-              if (v == 'free' || v == 'pro') onSwitchTier(v);
+              if (v == 'free' || v == 'pro') onSwitchTier?.call(v);
             },
             itemBuilder: (_) => [
               PopupMenuItem(
@@ -1347,9 +1351,11 @@ class _ChatHeader extends StatelessWidget {
                 value: 'restore',
                 child: Text('Restore purchases'),
               ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(value: 'free', child: Text('Stub Free')),
-              const PopupMenuItem(value: 'pro', child: Text('Stub Pro')),
+              if (onSwitchTier != null) ...const [
+                PopupMenuDivider(),
+                PopupMenuItem(value: 'free', child: Text('Stub Free')),
+                PopupMenuItem(value: 'pro', child: Text('Stub Pro')),
+              ],
             ],
             icon: Icon(Icons.more_horiz, color: AppTheme.inkMuted),
           ),

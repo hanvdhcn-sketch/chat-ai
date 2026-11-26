@@ -124,4 +124,61 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get storePurchaseFailed =>
       'खरीदारी पूरी नहीं हो सकी। कृपया बाद में पुनः प्रयास करें।';
+
+  @override
+  String get authSignInTitle => 'Orbita में साइन इन करें';
+
+  @override
+  String get authEmail => 'ईमेल';
+
+  @override
+  String get authPassword => 'पासवर्ड';
+
+  @override
+  String get authSignIn => 'साइन इन';
+
+  @override
+  String get authCreateAccount => 'खाता बनाएँ';
+
+  @override
+  String get authSwitchToSignUp => 'नए हैं? खाता बनाएँ';
+
+  @override
+  String get authSwitchToSignIn => 'पहले से खाता है? साइन इन करें';
+
+  @override
+  String get authUseEmailCode => 'इसके बजाय ईमेल पर साइन-इन कोड भेजें';
+
+  @override
+  String get authUsePassword => 'पासवर्ड का उपयोग करें';
+
+  @override
+  String get authSendCode => 'कोड भेजें';
+
+  @override
+  String get authCodeLabel => 'आपके ईमेल में आया कोड';
+
+  @override
+  String get authVerifyCode => 'सत्यापित करें';
+
+  @override
+  String get authCodeSent =>
+      'हमने आपके ईमेल पर कोड भेजा है। उसे नीचे दर्ज करें।';
+
+  @override
+  String get authConfirmEmail =>
+      'अपना पता सत्यापित करने के लिए ईमेल देखें, फिर साइन इन करें।';
+
+  @override
+  String get authFailed =>
+      'साइन इन विफल रहा। जानकारी जाँचें और फिर प्रयास करें।';
+
+  @override
+  String get authNotConfigured => 'इस बिल्ड में साइन-इन कॉन्फ़िगर नहीं है।';
+
+  @override
+  String get authSignOut => 'साइन आउट';
+
+  @override
+  String get authAccount => 'खाता';
 }

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'l10n/app_localizations.dart';
 import 'screens/chat_screen.dart';
+import 'screens/sign_in_screen.dart';
 import 'services/auth_service.dart';
 import 'services/locale_preference.dart';
 import 'services/startup_clock.dart';
@@ -18,7 +19,7 @@ Future<void> main() async {
 
   final auth = AuthService();
   final localePreference = LocalePreference();
-  // Optimistic local token — never block first paint on prefs or /v1/me.
+  // Dev stub signs in synchronously; real auth resolves after the first frame.
   auth.hydrateLocalSync();
   StartupClock.mark('hydrate');
 
@@ -64,11 +65,30 @@ class ChatAiApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            // Paint chat shell immediately — do not gate on network auth.
-            home: const ChatScreen(),
+            home: const AuthGate(),
           );
         },
       ),
     );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = context.select<AuthService, AuthStatus>((a) => a.status);
+    switch (status) {
+      case AuthStatus.signedIn:
+        return const ChatScreen();
+      case AuthStatus.signedOut:
+        return const SignInScreen();
+      case AuthStatus.unknown:
+        return const Scaffold(
+          backgroundColor: AppTheme.surface,
+          body: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        );
+    }
   }
 }
